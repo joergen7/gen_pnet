@@ -1,6 +1,6 @@
 -module( cvm1 ).
 
--export( [init/0, hot_transition_lst/0, place_get/2, consume/2,
+-export( [init/0, hot_transition_lst/0, place_get/2, consume_lst/2,
           place_add/3, place_remove/3, produce/2] ).
 
 -behaviour( pnet ).
@@ -23,7 +23,7 @@ place_remove( compartment, [box], UserState = #{ compartment := BoxLst } ) ->
 
 place_get( Place, UserState ) -> maps:get( Place, UserState ).
 
-consume( t, #{ coin_slot := CoinLst } ) ->
+consume_lst( t, #{ coin_slot := CoinLst } ) ->
   [#{ coin_slot => [coin] } || coin <- CoinLst].
 
 produce( t, #{ coin_slot := [coin] } ) ->

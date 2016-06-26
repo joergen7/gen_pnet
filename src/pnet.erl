@@ -42,7 +42,7 @@
 -callback hot_transition_lst() ->
   TransitionLst::[atom()].
 
--callback consume( Transition::atom(), UserInfo::_ ) ->
+-callback consume_lst( Transition::atom(), UserInfo::_ ) ->
   ConsumeMapLst::[#{ atom() => [_] }].
 
 -callback produce( Transition::atom(), ConsumeMap::#{ atom() => [_] } ) ->
@@ -76,9 +76,8 @@ when is_atom( Mod ),
      is_list( ColdTransitionLst ) ->
 
   ModState1 = ModState#mod_state{ cold_transition_lst = [Ct|ColdTransitionLst] },
-  {ok, ModState2} = process_cold_transitions( Mod, ModState1 ),
 
-  {reply, ok, ModState2};
+  {reply, ok, ModState1};
 
 handle_info( #add_token{ place = Place, token = Token}, ModState = #mod_state{ mod = Mod, user_state = UserState } )
 when is_atom( Place ),
@@ -86,9 +85,8 @@ when is_atom( Place ),
 
   {ok, UserState1} = apply( Mod, place_add, [Place, Token, UserState] ),
   {ok, UserState2} = eval_pnet( Mod, UserState1 ),
-  {ok, UserState3} = process_cold_transitions( Mod, UserState2 ),
 
-  {noreply, ModState#mod_state{ user_state = UserState3 }}.
+  {noreply, ModState#mod_state{ user_state = UserState2 }}.
 
 
 
@@ -115,11 +113,17 @@ start_link( Mod ) when is_atom( Mod ) ->
 %% Internal functions
 %%====================================================================
 
-eval_pnet( _Mod, UserState ) -> {ok, UserState}.
+eval_pnet( Mod, UserState ) -> {ok, UserState}.
+  lists:foreach( fun( T ) -> eval_transition( T, Mod, UserState ) end,
+                 apply( Mod, hot_transition_lst, [] ) ).
+
+eval_transition( Transition, Mod, UserState ) ->
+
+  ConsumeLst = consume_lst( Transition, UserState ),
+  ProduceLst = [produce( Transition, C ) || C <- ConsumeLst].
 
 
 
 
 
 
-process_cold_transitions( _Mod, UserState ) -> {ok, UserState}.
