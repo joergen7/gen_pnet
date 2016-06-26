@@ -29,25 +29,33 @@
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1,
           terminate/2] ).
 
+%% API exports
+-export( [start_link/1] ).
+
 -include( "pnet.hrl" ).
+
+-record( mod_state, { mod, user_state, cold_transition_lst = [] } ).
+
+-callback init() ->
+  {ok, UserState::_}.
 
 -callback hot_transition_lst() ->
   TransitionLst::[atom()].
 
--callback in_transition_lst() -> TransitionLst::[atom()].
+-callback consume( Transition::atom(), UserInfo::_ ) ->
+  ConsumeMapLst::[#{ atom() => [_] }].
 
--callback mode_lst( Transition::atom(), State::_ ) ->
-  ModeLst::[lst_map()].
+-callback produce( Transition::atom(), ConsumeMap::#{ atom() => [_] } ) ->
+  ProduceMap::#{ atom() => [_] }.
 
--callback arc_labeling( Begin::atom(), End::atom() ) ->
-  Labeling::atom().
+-callback place_add( Place::atom(), TokenLst::[_], UserState::_ ) ->
+  {ok, NewUserState::_}.
 
--callback post_map( Transition::atom(), Mode::lst_map() ) ->
-  PostMap::lst_map().
+-callback place_remove( Place::atom(), TokenLst::[_], UserState::_ ) ->
+  {ok, NewUserState::_}.
 
--callback init( Args::_ ) -> {ok, State:_}.
--callback place_add( Place::atom(), Token::_ ) -> ok.
--callback place_remove( Place::atom(), Token::_ ) -> ok.
+-callback place_get( Place::atom(), UserInfo::_ ) -> TokenLst::[_].
+
 
 %%====================================================================
 %% gen_server API functions
@@ -56,20 +64,42 @@
 code_change( _OldVsn, State, _Extra ) -> {ok, State}.
 
 
-handle_call( {add_out_transition, Place, NetPid}, _From, OutTransitionLst )
-when is_atom( Place ),
-     is_pid( NetPid ) orelse is_atom( NetPid ) ->
 
-  Ot = #out_tranition{ place = Place, net_pid = NetPid },
-
-  {reply, ok, [Ot|OutTransitionLst]}.
+handle_call( _Request, _From, State ) -> {reply, ok, State}.
 
 
 handle_cast( _Request, State ) -> {noreply, State}.
 
-handle_info( _Info, State ) -> {noreply, State}.
 
-init( [] ) -> {ok, []}.
+handle_info( Ct = #cold_transition{}, ModState = #mod_state{ mod = Mod, cold_transition_lst = ColdTransitionLst } )
+when is_atom( Mod ),
+     is_list( ColdTransitionLst ) ->
+
+  ModState1 = ModState#mod_state{ cold_transition_lst = [Ct|ColdTransitionLst] },
+  {ok, ModState2} = process_cold_transitions( Mod, ModState1 ),
+
+  {reply, ok, ModState2};
+
+handle_info( #add_token{ place = Place, token = Token}, ModState = #mod_state{ mod = Mod, user_state = UserState } )
+when is_atom( Place ),
+     is_atom( Mod ) ->
+
+  {ok, UserState1} = apply( Mod, place_add, [Place, Token, UserState] ),
+  {ok, UserState2} = eval_pnet( Mod, UserState1 ),
+  {ok, UserState3} = process_cold_transitions( Mod, UserState2 ),
+
+  {noreply, ModState#mod_state{ user_state = UserState3 }}.
+
+
+
+init( Mod ) ->
+
+  {ok, UserState1} = apply( Mod, init, [] ),
+  {ok, UserState2} = eval_pnet( Mod, UserState1 ),
+
+  {ok, #mod_state{ mod = Mod, user_state = UserState2}}.
+
+
 
 terminate( _Reason, _State ) -> ok.
 
@@ -77,9 +107,19 @@ terminate( _Reason, _State ) -> ok.
 %% API functions
 %%====================================================================
 
-
+start_link( Mod ) when is_atom( Mod ) ->
+  gen_server:start_link( ?MODULE, Mod, [] ).
 
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+eval_pnet( _Mod, UserState ) -> {ok, UserState}.
+
+
+
+
+
+
+process_cold_transitions( _Mod, UserState ) -> {ok, UserState}.

@@ -2,11 +2,11 @@
 %% Type definitions
 %%====================================================================
 
--type lst_map() :: #{atom() => [_]}.
 
 
 %%====================================================================
 %% Record definitions
 %%====================================================================
 
--record( out_transition, {place, net_pid} ).
+-record( cold_transition, {src_place, pnet_pid, dest_place} ).
+-record( add_token, {place, token} ).
