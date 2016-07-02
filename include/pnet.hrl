@@ -8,5 +8,9 @@
 %% Record definitions
 %%====================================================================
 
+%% DEPRECATED
 -record( cold_transition, {src_place, pnet_pid, dest_place} ).
 -record( add_token, {place, token} ).
+%% ----------
+
+-record( token, {place, id, info} ).
