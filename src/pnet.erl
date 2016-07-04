@@ -32,7 +32,7 @@ start( Mod ) when is_atom( Mod ) ->
 
   ChildSpec = #{ id       => make_ref(),
                  start    => {?MODULE, start_link, [Mod]},
-                 restart  => temporary,
+                 restart  => permanent,
                  shutdown => 5000,
                  type     => worker,
                  modules  => [Mod]
