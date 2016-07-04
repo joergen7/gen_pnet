@@ -20,7 +20,7 @@
 %%====================================================================
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+  supervisor:start_link( {local, ?SERVER}, ?MODULE, [] ).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -29,14 +29,23 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init( [] ) ->
 
-    Pnmon = #{id       => ?SERVER,
-              start    => {pnmon, start_link, []},
-              restart  => permanent,
-              shutdown => 5000,
-              type     => worker,
-              modules  => [pnmon]},
+  Pnmon = #{ id       => pnmon,
+             start    => {pnmon, start_link, []},
+             restart  => permanent,
+             shutdown => 5000,
+             type     => worker,
+             modules  => [pnmon]
+           },
 
-    {ok, { {one_for_one, 3, 10}, [Pnmon]} }.
+  TrsnSup = #{ id       => trsn_sup,
+               start    => {trsn_sup, start_link, []},
+               restart  => permanent,
+               shutdown => 5000,
+               type     => supervisor,
+               modules  => [trsn_sup]
+             },
+
+  {ok, {{one_for_all, 3, 10}, [Pnmon, TrsnSup]}}.
 
 %%====================================================================
 %% Internal functions

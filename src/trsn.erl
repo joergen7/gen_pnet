@@ -1,8 +1,7 @@
 -module( trsn ).
--behaviour( gen_server ).
+-behaviour( gen_event ).
 
--export( [start_link/3, stop/1] ).
--export( [init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
+-export( [init/1, handle_call/2, handle_info/2, terminate/2, handle_event/2,
           code_change/3] ).
 
 -include( "pnet.hrl" ).
@@ -11,95 +10,44 @@
 %% Internal record definitions
 %%====================================================================
 
--record( mod_state, { subnet_pid, mod, transition } ).
-
-%%====================================================================
-%% API functions
-%%====================================================================
-
--spec start_link( SubnetPid, Mod, Transition ) -> {ok, Pid}
-when SubnetPid  :: pid(),
-     Mod        :: atom(),
-     Transition :: atom(),
-     Pid        :: pid().
-
-start_link( SubnetPid, Mod, Transition )
-when is_pid( SubnetPid ),
-     is_atom( Mod ),
-     is_atom( Transition ) ->
-
-  InitArg = #mod_state{ subnet_pid = SubnetPid,
-                        mod        = Mod,
-                        transition = Transition },
-
-  gen_server:start_link( ?MODULE, InitArg, [] ).
-
--spec stop( Pid::pid() ) -> ok.
-
-stop( Pid ) when is_pid( Pid ) ->
-  gen_server:call( Pid, stop ).
+-record( mod_state, { mod, pnet_pid, label } ).
 
 %%====================================================================
 %% gen_server callback functions
 %%====================================================================
 
--spec init( InitState::#mod_state{} ) -> {ok, State::#mod_state{}}.
+-spec init( [Mod, PnetPid, Label] ) -> {ok, State}
+when Mod     :: atom(),
+     PnetPid :: pid(),
+     Label   :: atom(),
+     State   :: #mod_state{}.
 
-init( #mod_state{ subnet_pid = SubnetPid, mod = Mod, transition = Transition } )
-when is_pid( SubnetPid ),
-     is_atom( Mod ),
-     is_atom( Transition ) ->
+init( [Mod, PnetPid, Label] )
+when is_atom( Mod ),
+     is_pid( PnetPid ),
+     is_atom( Label ) ->
 
-  error_logger:info_report(
-    [started,
-     {pid, self()},
-     {subnet_pid, SubnetPid},
-     {mod, Mod},
-     {transition, Transition}] ),
+  ok = pnmon:notify( #trsn_init_event{ pid      = self(),
+                                       mod      = Mod,
+                                       pnet_pid = PnetPid,
+                                       label    = Label } ),
 
-  {ok, #mod_state{ subnet_pid = SubnetPid, mod = Mod, transition = Transition }}.
+  {ok, #mod_state{ mod = Mod, pnet_pid = PnetPid, label = Label }}.
 
--spec handle_call( stop, {Tag, Pid}, State ) -> {stop, normal, ok, NewState}
-when Tag      :: _,
-     Pid      :: pid(),
-     State    :: #mod_state{},
-     NewState :: #mod_state{}.
+-spec terminate( Arg::_, State::#mod_state{} ) -> ok.
 
-handle_call( stop, _From, State ) -> {stop, normal, ok, State}.
+terminate( Arg, #mod_state{ mod = Mod, pnet_pid = PnetPid, label = Label } ) ->
 
--spec handle_cast( {notify, TokenLst}, State ) -> {noreply, NewState}
-when TokenLst :: [#token{}],
-     State    :: #mod_state{},
-     NewState :: #mod_state{}.
+  ok = pnmon:notify( #trsn_terminate_event{ pid      = self(),
+                                            mod      = Mod,
+                                            pnet_pid = PnetPid,
+                                            label    = Label,
+                                            reason   = Arg } ).
 
-handle_cast( {notify, TokenLst}, State )
-when is_list( TokenLst ),
-     is_tuple( State ) ->
-
-  handle_notify( TokenLst, State ),
-
-  {noreply, State}.
-
--spec handle_info( Info, State ) -> {noreply, NewState}
-when Info :: _,
-     State :: #mod_state{},
-     NewState :: #mod_state{}.
-
-handle_info( _Info, State ) -> {noreply, State}.
-
--spec terminate( Reason::_, State::#mod_state{} ) -> ok.
-
-terminate( Reason, _State ) ->
-  error_logger:info_report( [terminated, {pid, self()}, {reason, Reason}] ),
-  ok.
-
--spec code_change( OldVsn, State, Extra ) -> {ok, NewState}
-when OldVsn   :: string(),
-     State    :: #mod_state{},
-     Extra    :: _,
-     NewState :: #mod_state{}.
-
+handle_info( _Info, State )           -> {ok, State}.
 code_change( _OldVsn, State, _Extra ) -> {ok, State}.
+handle_call( _Request, State )        -> {ok, ok, State}.
+handle_event( _Event, State )         -> {ok, State}.
 
 %%====================================================================
 %% Internal functions
@@ -109,9 +57,8 @@ code_change( _OldVsn, State, _Extra ) -> {ok, State}.
 when TokenLst :: [#token{}],
      State    :: #mod_state{}.
 
-handle_notify( TokenLst, #mod_state{ subnet_pid = SubnetPid,
-                                     mod        = Mod,
-                                     transition = Transition } )
+handle_notify( TokenLst, #mod_state{ mod = Mod, pnet_pid = SubnetPid,
+                                     label = Transition } )
 when is_list( TokenLst ) ->
 
   % get consume list
