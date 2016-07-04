@@ -9,7 +9,7 @@
 %% Internal record definitions
 %%====================================================================
 
--record( mod_state, { mod, place_tab} ).
+-record( mod_state, { mod, place_tab, lock_tab} ).
 -record( init_arg, { mod } ).
 
 %%====================================================================
@@ -36,8 +36,11 @@ stop( Pid ) when is_pid( Pid ) ->
 init( #init_arg{ mod = Mod } )
 when is_atom( Mod ) ->
 
+  pnmon:notify( #pnet_init_event{ pid = self(), mod = Mod } ),
+
   PlaceTab = ets:new( place_tab, [] ),
-  State    = #mod_state{ mod = Mod, place_tab = PlaceTab },
+  LockTab = ets:new( lock_tab, [] ),
+  State    = #mod_state{ mod = Mod, place_tab = PlaceTab, lock_tab = LockTab },
 
   {ok, State}.
 
@@ -69,8 +72,11 @@ handle_info( _Info, State ) when is_tuple( State ) ->
 -spec terminate( Reason::_, State::#mod_state{} ) -> ok.
 
 terminate( Reason, #mod_state{ mod = Mod } ) ->
-  error_logger:info_report(
-    [terminate, {reason, Reason}, {type, subnet}, {pid, self()}, {mod, Mod}] ),
+
+  pnmon:notify( #pnet_terminate_event{ pid    = self(),
+                                       mod    = Mod,
+                                       reason = Reason } ),
+
   ok.
 
 -spec code_change( OldVsn, State, Extra ) -> {ok, NewState}

@@ -1,4 +1,4 @@
--module( transition ).
+-module( trsn ).
 -behaviour( gen_server ).
 
 -export( [start_link/3, stop/1] ).
