@@ -38,10 +38,30 @@ when is_atom( Mod ),
 
   {ok, State}.
 
-terminate( _Arg, _State )             -> ok.
-handle_call( Request, _State )        -> error( {call_unsupported, Request} ).
-handle_info( Info, _State )           -> error( {info_unsupported, Info} ).
-code_change( _OldVsn, State, _Extra ) -> {ok, State}.
+terminate( _Arg, _State ) ->
+  ok.
+
+handle_call( Request, State = #mod_state{ mod = Mod, trsn = Trsn } ) ->
+
+  error_logger:warning_report( [{module, trsn_handler}, {callback, handle_call},
+                                {mod, Mod}, {trsn, Trsn}, {request, Request},
+                                {return, {error, unsupported_op}}] ),
+
+  {ok, {error, unsupported_op}, State}.
+
+
+handle_info( {'EXIT', Pid, normal}, State ) -> {ok, State};
+
+handle_info( Info, State = #mod_state{ mod = Mod, trsn = Trsn } ) ->
+
+  error_logger:warning_report( [{module, trsn_handler}, {callback, handle_info},
+                                {mod, Mod}, {trsn, Trsn}, {info, Info},
+                                {action, ignored}] ),
+
+  {ok, State}.
+
+code_change( _OldVsn, State = #mod_state{}, _Extra ) ->
+  {ok, State}.
 
 handle_event( place_update,
               State = #mod_state{ mod       = Mod,
@@ -79,6 +99,8 @@ handle_event( place_update,
         ok ->
 
           F = fun() ->
+
+            io:format( "Firing transition as ~p~n", [self()] ),
 
             % fire the transition
             ProduceLst = Mod:fire( ConsumeLst, UserInfo ),

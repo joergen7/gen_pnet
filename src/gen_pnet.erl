@@ -144,22 +144,17 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
 
   {ok, State}.
 
--type call_request() :: stop
-                      | {ls, atom()}
-                      | {consume, [#token{}]}
-                      | {add, #token{}}
-                      | {produce, [#token{}]}.
-
 -type call_reply()   :: ok
                       | {ok, [#token{}]}
                       | {error, stale_request
-                      | no_such_place}.
+                              | no_such_place
+                              | unsupported_op}.
 
 -type call_return()  :: {stop, normal, stopped, #mod_state{}}
                       | {reply, call_reply(), #mod_state{}}.
 
 -spec handle_call( Request, {Tag, Pid}, State ) -> Result
-when Request  :: call_request(),
+when Request  :: _,
      Tag      :: _,
      Pid      :: pid(),
      State    :: #mod_state{},
@@ -195,7 +190,7 @@ when is_list( ConsumeLst ) ->
 
     L ->
 
-      State1 = #mod_state{ token_lst = TokenLst1 },
+      State1 = State#mod_state{ token_lst = TokenLst1 },
 
       io:format( "  success --> ~p~n", [State1] ),
 
@@ -257,7 +252,15 @@ when is_list( AddLst ) ->
 
   ok = lists:foreach( G, NotifyLst ),
 
-  {reply, ok, State#mod_state{ token_lst = TokenLst1 }}.
+  {reply, ok, State#mod_state{ token_lst = TokenLst1 }};
+
+handle_call( Request, _From, State = #mod_state{ mod = Mod } ) ->
+
+  error_logger:warning_report( [{module, gen_pnet}, {callback, handle_call},
+                                {mod, Mod}, {request, Request},
+                                {return, {error, unsupported_op}}] ),
+
+  {reply, {error, unsupported_op}, State}.
 
 
 
@@ -266,14 +269,27 @@ when Request  :: _,
      State    :: #mod_state{},
      NewState :: #mod_state{}.
 
-handle_cast( _Request, State = #mod_state{} ) -> {noreply, State}.
+handle_cast( Request, State = #mod_state{ mod = Mod } ) ->
+
+  error_logger:warning_report( [{module, gen_pnet}, {callback, handle_cast},
+                                {mod, Mod}, {request, Request},
+                                {action, ignored}] ),
+
+
+  {noreply, State}.
 
 -spec handle_info( Info, State ) -> {noreply, NewState}
 when Info     :: _,
      State    :: #mod_state{},
      NewState :: #mod_state{}.
 
-handle_info( _Info, State = #mod_state{} ) -> {noreply, State}.
+handle_info( Info, State = #mod_state{ mod = Mod } ) ->
+
+  error_logger:warning_report( [{module, gen_pnet}, {callback, handle_info},
+                                {mod, Mod}, {info, Info},
+                                {action, ignored}] ),
+
+  {noreply, State}.
 
 
 
