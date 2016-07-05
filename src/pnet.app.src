@@ -1,8 +1,7 @@
 {application, pnet,
- [{description, "An OTP application"},
+ [{description, "An OTP library"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, { pnet_app, []}},
   {applications,
    [kernel,
     stdlib
