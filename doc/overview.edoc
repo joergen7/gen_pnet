@@ -10,3 +10,52 @@ Some applications exhibit behavioral patterns that lend themselves to Petri nets
 This OTP library is a framework for programming with Petri nets. It implements a very general form of Petri nets: non-elementary, (in theory) unbounded Petri nets. I.e., tokens may not only be markers but carry additional information. Furthermore, a place can hold any number of tokens not just one.
 
 While many simulation libraries only mimic the concurrent behavior of Petri nets, this library allows the definition of nets with an arbitrary number of transitions competing for a place's tokens neither imposing order in the form of an orverarching loop nor otherwise constraining parallelism.
+
+<h2>Quick Start</h2>
+```
+rebar3 shell
+'''
+
+```
+rr( "include/gen_pnet.hrl" ).
+[token]
+
+{ok, Pid} = gen_pnet:start_link( cvm2, [], [] ).
+{ok, <0.115.0>}
+
+gen_pnet:ls( Pid, coin_slot ).
+{ok, []}
+
+gen_pnet:ls( Pid, cash_box ).
+{ok, []}
+
+gen_pnet:ls( Pid, signal ).
+{ok, []}
+
+gen_pnet:ls( Pid, compartment ).
+{ok, []}
+
+gen_pnet:ls( Pid, storage ).
+{ok,[#token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []}]}
+
+gen_pnet:add( Pid, #token{ place = coin_slot } ).
+ok
+
+gen_pnet:ls( Pid, cash_box ). 
+{ok,[#token{place = cash_box,info = []}]}
+
+gen_pnet:ls( Pid, compartment ).
+{ok,[#token{place = compartment,info = []}]}
+
+gen_pnet:ls( Pid, storage ).    
+{ok,[#token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []},
+     #token{place = storage,info = []}]}
+'''

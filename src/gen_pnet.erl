@@ -33,13 +33,17 @@
 %%
 %% <h4>init/1</h4>
 %% An initialization function called when the gen_pnet module is started.
-%% Returns a user info data structure that is made available when enumerating
-%% possible consumption lists with `enum_consume_lst/1' and when a transition is
-%% fired with `fire/2'. Note that the user info data structure cannot be updated
-%% afterwards.
+%% Returns
+%% <ul>
+%%   <li>the initial marking of the Petri net in the form of a token list</li>
+%%   <li>a user-defined data structure that is made available when enumerating
+%%       possible consumption lists with `enum_consume_lst/1' and when a
+%%       transition is fired with `fire/2'. Note that this user-defined data
+%%       structure cannot be updated afterwards.</li>
+%% </ul>
 %% ```
 %%  init( InitArg :: _ )  
-%%    -> {ok, _}
+%%    -> {ok, [#token{}], _}
 %% '''
 %% <h4>place_lst/0</h4>
 %% The `place_lst' function returns a list of atoms denoting the names of the
@@ -103,7 +107,8 @@
 %% Callback function definition
 %%====================================================================
 
--callback init( InitArg::_ ) -> {ok, UserInfo::_}.
+-callback init( InitArg::_ ) ->
+  {ok, InitMarking::[#token{}], UserInfo::_}.
 
 -callback place_lst()
   -> PlaceLst::[atom()].
@@ -214,7 +219,7 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
 
   io:format( "gen_pnet:init() {~p, ~p} )~n", [Mod, UserArg] ),
 
-  {ok, UserInfo} = Mod:init( UserArg ),
+  {ok, TokenLst, UserInfo} = Mod:init( UserArg ),
 
   F = fun( Place, Acc ) ->
 
@@ -235,7 +240,10 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
 
 
   % create pnet state
-  State    = #mod_state{ mod = Mod, user_info = UserInfo, mgr_map = MgrMap },
+  State    = #mod_state{ mod       = Mod,
+                         user_info = UserInfo,
+                         mgr_map   = MgrMap,
+                         token_lst = TokenLst },
 
   {ok, State}.
 

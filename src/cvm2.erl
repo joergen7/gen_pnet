@@ -31,14 +31,16 @@
 
 -include( "include/gen_pnet.hrl" ).
 
-init( _InitArg ) -> {ok, []}.
+init( _InitArg ) ->
+  St = #token{ place = storage },
+  {ok, [St, St, St, St, St, St], []}.
 
 place_lst() -> [coin_slot, cash_box, signal, storage, compartment].
 
 trsn_lst() -> [a, b].
 
 preset( a ) -> [coin_slot];
-preset( b ) -> [signal].
+preset( b ) -> [signal, storage].
 
 enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
   [[C] || C <- CsLst];
@@ -46,8 +48,8 @@ enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
 enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
   [[Sg, St] || Sg <- SgLst, St <- StLst].
 
-fire( a, [#token{ place = coin_slot }], _UserInfo ) ->
+fire( a, [_C], _UserInfo ) ->
   [#token{ place = signal }, #token{ place = cash_box }];
 
-fire( b, [#token{ place = signal }, #token{ place = storage }], _UserInfo ) ->
+fire( b, [_Sg, _St], _UserInfo ) ->
   [#token{ place = compartment }].

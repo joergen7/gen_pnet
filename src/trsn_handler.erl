@@ -100,7 +100,7 @@ handle_event( place_update,
   TokenMap = token_map( Mod, PnetPid, Trsn ),
 
   % get all possibilities for this transition to consume tokens
-  Ecl = Mod:enum_consum_lst( Trsn, TokenMap, UserInfo ),
+  Ecl = Mod:enum_consume_lst( Trsn, TokenMap, UserInfo ),
 
   % is there any combination of tokens we can consume?
   case Ecl of

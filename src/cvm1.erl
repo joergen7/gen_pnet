@@ -35,7 +35,7 @@
 %% gen_pnet callback functions
 %%====================================================================
 
-init( _UserArg ) -> {ok, []}.
+init( _UserArg ) -> {ok, [], []}.
 
 place_lst() -> [coin_slot, compartment].
 
@@ -46,5 +46,5 @@ preset( t ) -> [coin_slot].
 enum_consume_lst( t, #{ coin_slot := CoinLst }, _UserInfo ) ->
   [[C] || C <- CoinLst].
 
-fire( t, [#token{ place = coin_slot }], _UserInfo ) ->
+fire( t, [_C], _UserInfo ) ->
   [#token{ place = compartment }].
