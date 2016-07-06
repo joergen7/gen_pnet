@@ -43,14 +43,14 @@
 %% '''
 %% <h4>trsn_lst/0</h4>
 %% The `trsn_lst' function returns a list of atoms denoting the names of the
-%% transitions in the net structure.
+%% transitions in the Petri net's structure.
 %% ```
 %%  trsn_lst()  
 %%    -> [atom()]
 %% '''
 %% <h4>place_lst/0</h4>
 %% The `place_lst' function returns a list of atoms denoting the names of the
-%% places in the net structure.
+%% places in the Petri net's structure.
 %% ```
 %%  place_lst()  
 %%    -> [atom()]
