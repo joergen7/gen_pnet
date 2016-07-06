@@ -128,7 +128,7 @@ handle_event( place_update,
             io:format( "Firing transition as ~p~n", [self()] ),
 
             % fire the transition
-            ProduceLst = Mod:fire( ConsumeLst, UserInfo ),
+            ProduceLst = Mod:fire( Trsn, ConsumeLst, UserInfo ),
 
             % now write the produced tokens back
             gen_pnet:produce( PnetPid, ProduceLst )

@@ -22,7 +22,7 @@
 %%
 %% @author Jörgen Brandt <brandjoe@hu-berlin.de>
 
--module( cvm1 ).
+-module( cvm2 ).
 
 -behaviour( gen_pnet ).
 
@@ -31,20 +31,23 @@
 
 -include( "include/gen_pnet.hrl" ).
 
-%%====================================================================
-%% gen_pnet callback functions
-%%====================================================================
+init( _InitArg ) -> {ok, []}.
 
-init( _UserArg ) -> {ok, []}.
+place_lst() -> [coin_slot, cash_box, signal, storage, compartment].
 
-place_lst() -> [coin_slot, compartment].
+trsn_lst() -> [a, b].
 
-trsn_lst() -> [t].
+preset( a ) -> [coin_slot];
+preset( b ) -> [signal].
 
-preset( t ) -> [coin_slot].
+enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
+  [[C] || C <- CsLst];
 
-enum_consume_lst( t, #{ coin_slot := CoinLst }, _UserInfo ) ->
-  [[C] || C <- CoinLst].
+enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
+  [[Sg, St] || Sg <- SgLst, St <- StLst].
 
-fire( t, [#token{ place = coin_slot }], _UserInfo ) ->
+fire( a, [#token{ place = coin_slot }], _UserInfo ) ->
+  [#token{ place = signal }, #token{ place = cash_box }];
+
+fire( b, [#token{ place = signal }, #token{ place = storage }], _UserInfo ) ->
   [#token{ place = compartment }].

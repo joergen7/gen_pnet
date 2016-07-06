@@ -41,18 +41,18 @@
 %%  init( InitArg :: _ )  
 %%    -> {ok, _}
 %% '''
-%% <h4>trsn_lst/0</h4>
-%% The `trsn_lst' function returns a list of atoms denoting the names of the
-%% transitions in the Petri net's structure.
-%% ```
-%%  trsn_lst()  
-%%    -> [atom()]
-%% '''
 %% <h4>place_lst/0</h4>
 %% The `place_lst' function returns a list of atoms denoting the names of the
 %% places in the Petri net's structure.
 %% ```
 %%  place_lst()  
+%%    -> [atom()]
+%% '''
+%% <h4>trsn_lst/0</h4>
+%% The `trsn_lst' function returns a list of atoms denoting the names of the
+%% transitions in the Petri net's structure.
+%% ```
+%%  trsn_lst()  
 %%    -> [atom()]
 %% '''
 %% <h4>preset/1</h4>
@@ -62,7 +62,7 @@
 %%  preset( Trsn::atom() )  
 %%    -> [atom()]
 %% '''
-%% <h4>enum_consume_lst/1</h4>
+%% <h4>enum_consume_lst/3</h4>
 %% The `enum_consume_lst' function consumes a map associating a place atom with
 %% a list of tokens and returns a list of lists, where each list contains a
 %% combination of tokens that can be consumed firing a given transition. Returns
@@ -75,11 +75,12 @@
 %%    -> [[#token{}]]
 %% '''
 %%
-%% <h4>fire/2</h4>
+%% <h4>fire/3</h4>
 %% Called to fire a transition with a given consumption list. `fire/2' must
 %% return the list of tokens that is produced.
 %% ```
-%%  fire( ConsumeLst :: [#token{}],
+%%  fire( Trsn       :: atom(),
+%%        ConsumeLst :: [#token{}],
 %%        UserInfo   :: _ )
 %%    -> [#token{}]
 %% '''
@@ -102,23 +103,27 @@
 %% Callback function definition
 %%====================================================================
 
--callback trsn_lst() ->
-  TrsnLst::[atom()].
+-callback init( InitArg::_ ) -> {ok, UserInfo::_}.
 
--callback place_lst() ->
-  PlaceLst::[atom()].
+-callback place_lst()
+  -> PlaceLst::[atom()].
 
--callback preset( Trsn::atom() ) -> PlaceLst::[atom()].
+-callback trsn_lst()
+  -> TrsnLst::[atom()].
+
+-callback preset( Trsn::atom() )
+  -> PlaceLst::[atom()].
 
 -callback enum_consume_lst( Trsn     :: atom(),
                             TokenMap :: #{ atom() => [#token{}] },
-                            UserInfo :: _) ->
-  [[#token{}]].
+                            UserInfo :: _)
+  -> [[#token{}]].
 
--callback fire( ConsumeLst::[#token{}], UserInfo::_ ) ->
-  ProduceLst::[#token{}].
+-callback fire( Trsn       :: atom(),
+                ConsumeLst :: [#token{}],
+                UserInfo   :: _ )
+  -> ProduceLst::[#token{}].
 
--callback init( UserArg::_ ) -> {ok, UserInfo::_}.
 
 %%====================================================================
 %% Internal record definitions
