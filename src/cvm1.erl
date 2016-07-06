@@ -26,7 +26,7 @@
 
 -behaviour( gen_pnet ).
 
--export( [preset/1, enum_consum_lst/3, fire/2, init/1, place_lst/0,
+-export( [preset/1, enum_consume_lst/3, fire/2, init/1, place_lst/0,
           trsn_lst/0] ).
 
 -include( "include/gen_pnet.hrl" ).
@@ -43,7 +43,7 @@ preset( t ) -> [coin_slot].
 
 init( _UserArg ) -> {ok, []}.
 
-enum_consum_lst( t, #{ coin_slot := CoinLst }, _UserInfo ) ->
+enum_consume_lst( t, #{ coin_slot := CoinLst }, _UserInfo ) ->
   [[C] || C <- CoinLst].
 
 fire( [#token{ place = coin_slot }], _UserInfo ) ->

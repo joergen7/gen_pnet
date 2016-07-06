@@ -20,7 +20,72 @@
 %%
 %% %CopyrightEnd%
 %%
+
+
+%%--------------------------------------------------------------------
 %% @author Jörgen Brandt <brandjoe@hu-berlin.de>
+%% @doc A module representing a Petri net.
+%%
+%% To define the structure of a Petri net, users implement a number of
+%% callback functions laid out in the gen_pnet module.
+%%
+%% <h3>User module exports</h3>
+%%
+%% <h4>init/1</h4>
+%% An initialization function called when the gen_pnet module is started.
+%% Returns a user info data structure that is made available when enumerating
+%% possible consumption lists with `enum_consume_lst/1' and when a transition is
+%% fired with `fire/2'. Note that the user info data structure cannot be updated
+%% afterwards.
+%% ```
+%%  init( InitArg :: _ )  
+%%    -> {ok, _}
+%% '''
+%% <h4>trsn_lst/0</h4>
+%% The `trsn_lst' function returns a list of atoms denoting the names of the
+%% transitions in the net structure.
+%% ```
+%%  trsn_lst()  
+%%    -> [atom()]
+%% '''
+%% <h4>place_lst/0</h4>
+%% The `place_lst' function returns a list of atoms denoting the names of the
+%% places in the net structure.
+%% ```
+%%  place_lst()  
+%%    -> [atom()]
+%% '''
+%% <h4>preset/1</h4>
+%% The `preset' function returns the preset of a given transition. I.e., it
+%% enumerates all places, this transition may consume tokens from.
+%% ```
+%%  preset( Trsn::atom() )  
+%%    -> [atom()]
+%% '''
+%% <h4>enum_consume_lst/1</h4>
+%% The `enum_consume_lst' function consumes a map associating a place atom with
+%% a list of tokens and returns a list of lists, where each list contains a
+%% combination of tokens that can be consumed firing a given transition. Returns
+%% the empty list if the transition is not enabled. One of the enumerated lists
+%% is chosen to be handed to the `fire/2' function firing the transition.
+%% ```
+%%  enum_consume_lst( Trsn     :: atom(),
+%%                    TokenMap :: #{ atom() => [#token{}]},
+%%                    UserInfo :: _ )
+%%    -> [[#token{}]]
+%% '''
+%%
+%% <h4>fire/2</h4>
+%% Called to fire a transition with a given consumption list. `fire/2' must
+%% return the list of tokens that is produced.
+%% ```
+%%  fire( ConsumeLst :: [#token{}],
+%%        UserInfo   :: _ )
+%%    -> [#token{}]
+%% '''
+%%
+%% @end
+%%--------------------------------------------------------------------
 
 -module( gen_pnet ).
 
@@ -45,9 +110,9 @@
 
 -callback preset( Trsn::atom() ) -> PlaceLst::[atom()].
 
--callback enum_consum_lst( Trsn     :: atom(),
-                           TokenMap :: #{ atom() => [#token{}] },
-                           UserInfo :: _) ->
+-callback enum_consume_lst( Trsn     :: atom(),
+                            TokenMap :: #{ atom() => [#token{}] },
+                            UserInfo :: _) ->
   [[#token{}]].
 
 -callback fire( ConsumeLst::[#token{}], UserInfo::_ ) ->
