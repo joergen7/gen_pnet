@@ -1,10 +1,7 @@
 %% -*- erlang -*-
 %%
-%% %CopyrightBegin%
 %%
 %% A generic Petri net OTP library
-%%
-%% Copyright 2016 Jörgen Brandt. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -18,12 +15,12 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
-%% %CopyrightEnd%
 %%
-
-
+%%
+%%
 %%--------------------------------------------------------------------
 %% @author Jörgen Brandt <brandjoe@hu-berlin.de>
+%% @copyright 2016 Jörgen Brandt
 %% @doc A module representing a Petri net.
 %%
 %% To define the structure of a Petri net, users implement a number of
@@ -256,6 +253,13 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
   io:format( "gen_pnet:init() {~p, ~p} )~n", [Mod, UserArg] ),
 
   {ok, TokenLst, UserInfo} = Mod:init( UserArg ),
+
+  ok = lists:foreach( fun( #token{ place = P } ) ->
+                        case lists:member( P, Mod:place_lst() ) of
+                          true  -> ok;
+                          false -> error( {no_such_place, P} )
+                        end
+                      end, TokenLst ),
 
   F = fun( Place, Acc ) ->
 

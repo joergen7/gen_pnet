@@ -4,6 +4,7 @@
 @title A generic Petri net OTP library
 @see gen_pnet
 @see cvm2
+@reference <a href="https://github.com/joergen7/gen_pnet">Source code</a> hosted at GitHub.
 @doc
 
 Some applications exhibit behavioral patterns that lend themselves to Petri nets. The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and what other operations might run in parallel.
@@ -77,9 +78,19 @@ gen_pnet:ls( Pid, storage ).
 '''
 <h3>Implementing the Callback Functions</h3>
 
-In the previous section we showed how the `gen_pnet' API can be used to create and use predefined Petri nets. Now, let us have a look at the callback functions that need to be implemented to define a Petri net. These are the six callbacks `init/1', `place_lst/0', `trsn_lst/0', `preset/1', `enum_consume_lst/3', and `fire/3'. We have a look at each of them in turn.
+In the previous section we showed how the `gen_pnet' API can be used to create and use predefined Petri nets. Now, let us have a look at the callback functions that need to be implemented to define a Petri net. These are the six callbacks
+<ul>
+  <li>`init/1' which gives the initial marking of the net</li>
+  <li>`place_lst/0', `trsn_lst/0', and `preset/1' which define the net structure</li>
+  <li>`enum_consume_lst/3' which determines when a transition is enabled and what tokens it would consume if it were to fire</li>
+  <li>`fire/3' which defines what happens when a transition actually fires and what tokens it produces</li>
+</ul>
+We have a look at each of them in turn.
 
 <h4>init/1</h4>
+
+The `init/1' function gives us the chance to define the initial marking of the Petri net in the form of a token list. Additionally, we can create a user info data structure which is handed also to the functions `enum_consume_lst/3' and `fire/3'.
+
 ```
 init( _InitArg ) ->
   St = #token{ place = storage },
@@ -91,6 +102,27 @@ place_lst() ->
   [coin_slot, cash_box, signal, storage, compartment].
 '''
 <h4>trsn_lst/0</h4>
+```
+trsn_lst() -> [a, b].
+'''
 <h4>preset/1</h4>
+```
+preset( a ) -> [coin_slot];
+preset( b ) -> [signal, storage].
+'''
 <h4>enum_consume_lst/3</h4>
+```
+enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
+  [[C] || C <- CsLst];
+
+enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
+  [[Sg, St] || Sg <- SgLst, St <- StLst].
+'''
 <h4>fire/3</h4>
+```
+fire( a, [_C], _UserInfo ) ->
+  [#token{ place = signal }, #token{ place = cash_box }];
+
+fire( b, [_Sg, _St], _UserInfo ) ->
+  [#token{ place = compartment }].
+'''
