@@ -96,8 +96,8 @@
 
 -behaviour( gen_server ).
 
--export( [start_link/3, start_link/4, stop/1, ls/2, which_trsns/2, consume/2,
-          produce/2, add/2] ).
+-export( [start_link/3, start_link/4, stop/1, ls/2, consume/2, produce/2,
+          add/2] ).
 -export( [init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
           code_change/3] ).
 
@@ -138,13 +138,43 @@
 
 
 %%====================================================================
+%% Data types
+%%====================================================================
+
+-type flag()        :: trace
+                     | log
+                     | {logfile, File::string()}
+                     | statistics
+                     | debug.
+
+-type option()      :: {timeout, Timeout::pos_integer()}
+                     | {debug, [Flag::flag()]}.
+
+-type server_name() :: {local, atom()}
+                     | {global, atom()}
+                     | {via, atom(), _}.
+
+-type init_arg()    :: {Mod::atom(), UserArg::_}.
+
+-type call_reply()   :: ok
+                      | {ok, [#token{}]}
+                      | {error, stale_request
+                              | no_such_place
+                              | unsupported_op}.
+
+-type call_return()  :: {stop, normal, stopped, #mod_state{}}
+                      | {reply, call_reply(), #mod_state{}}.
+
+%%====================================================================
 %% API functions
 %%====================================================================
+
+%% @doc Starts an unregistered Petri net instance, returning its process id.
 
 -spec start_link( Mod, UserArg, Options ) -> Result
 when Mod     :: atom(),
      UserArg    :: _,
-     Options :: [tuple()],
+     Options :: [option()],
      Result  :: _.
 
 start_link( Mod, UserArg, Options )
@@ -153,11 +183,13 @@ when is_atom( Mod ),
 
   gen_server:start_link( ?MODULE, {Mod, UserArg}, Options ).
 
+%% @doc Starts a Petri net instance and registers it under a specified name.
+
 -spec start_link( ServerName, Mod, UserArg, Options ) -> Result
-when ServerName :: tuple(),
+when ServerName :: server_name(),
      Mod        :: atom(),
-     UserArg       :: _,
-     Options    :: [tuple()],
+     UserArg    :: _,
+     Options    :: [option()],
      Result     :: _.
 
 start_link( ServerName, Mod, UserArg, Options )
@@ -167,10 +199,14 @@ when is_tuple( ServerName ),
 
   start_link( ServerName, ?MODULE, {Mod, UserArg}, Options ).
 
+%% @doc Orderly stops the Petri net.
+
 -spec stop( ServerRef::_ ) -> stopped.
 
 stop( ServerRef ) ->
   gen_server:call( ServerRef, stop ).
+
+%% @doc Lists all tokens associated to a given place.
 
 -spec ls( ServerRef::_, Place::atom() ) ->
   {ok, [#token{}]} | {error, no_such_place}.
@@ -178,40 +214,40 @@ stop( ServerRef ) ->
 ls( ServerRef, Place ) when is_atom( Place ) ->
   gen_server:call( ServerRef, {ls, Place} ).
 
+%% @doc Removes a specified list of tokens from the Petri net.
+
 -spec consume( ServerRef::_, ConsumeLst::[#token{}] ) ->
   ok | {error, stale_request}.
 
 consume( ServerRef, ConsumeLst ) when is_list( ConsumeLst ) ->
   gen_server:call( ServerRef, {consume, ConsumeLst} ).
 
+%% @see add/2
+%% @see consume/3
+%% @doc Adds a specified list of tokens to the Petri net.
+%%
+%% In contrast to `add/2', this function throws an error if one of the tokens
+%% specifies a non-existent place causing the Petri net instance to crash.
+
 -spec produce( ServerRef::_, ProduceLst::[#token{}] ) -> ok.
 
 produce( ServerRef, ProduceLst ) when is_list( ProduceLst ) ->
   gen_server:call( ServerRef, {produce, ProduceLst} ).
 
--spec which_trsns( Mod::atom(), Place::atom() ) -> [atom()].
 
-which_trsns( Mod, Place ) when is_atom( Place ) ->
-  
-  F = fun( Trsn, Acc ) ->
-        case lists:member( Place, Mod:preset( Trsn ) ) of
-          false -> Acc;
-          true  -> [Trsn|Acc]
-        end
-      end,
+%% @doc Adds a single token to the Petri net.
+%% @see produce/2
 
-  lists:foldl( F, [], Mod:trsn_lst() ).
+-spec add( ServerRef::_, Token::#token{} ) -> ok.
 
-  -spec add( ServerRef::_, Token::#token{} ) -> ok.
-
-  add( ServerRef, Token = #token{} ) ->
-    gen_server:call( ServerRef, {add, Token} ).
+add( ServerRef, Token = #token{} ) ->
+  gen_server:call( ServerRef, {add, Token} ).
 
 %%====================================================================
 %% gen_server callback functions
 %%====================================================================
 
--type init_arg() :: {Mod::atom(), UserArg::_}.
+%% @doc `gen_server' user module implementation of `init/1'.
 
 -spec init( InitArg::init_arg() ) -> {ok, State::#mod_state{}}.
 
@@ -247,14 +283,7 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
 
   {ok, State}.
 
--type call_reply()   :: ok
-                      | {ok, [#token{}]}
-                      | {error, stale_request
-                              | no_such_place
-                              | unsupported_op}.
-
--type call_return()  :: {stop, normal, stopped, #mod_state{}}
-                      | {reply, call_reply(), #mod_state{}}.
+%% @doc `gen_server' user module implementation of `handle_call/3'.
 
 -spec handle_call( Request, {Tag, Pid}, State ) -> Result
 when Request  :: _,
@@ -366,6 +395,7 @@ handle_call( Request, _From, State = #mod_state{ mod = Mod } ) ->
   {reply, {error, unsupported_op}, State}.
 
 
+%% @doc `gen_server' user module implementation of `handle_cast/2'.
 
 -spec handle_cast( Request, State ) -> {noreply, NewState}
 when Request  :: _,
@@ -381,6 +411,8 @@ handle_cast( Request, State = #mod_state{ mod = Mod } ) ->
 
   {noreply, State}.
 
+%% @doc `gen_server' user module implementation of `handle_info/2'.
+
 -spec handle_info( Info, State ) -> {noreply, NewState}
 when Info     :: _,
      State    :: #mod_state{},
@@ -394,7 +426,7 @@ handle_info( Info, State = #mod_state{ mod = Mod } ) ->
 
   {noreply, State}.
 
-
+%% @doc `gen_server' user module implementation of `terminate/2'.
 
 -spec terminate( Reason::_, State::#mod_state{} ) -> ok.
 
@@ -404,6 +436,8 @@ terminate( Reason, _State ) ->
 
   ok.
 
+%% @doc `gen_server' user module implementation of `code_change/3'.
+
 -spec code_change( OldVsn, State, Extra ) -> {ok, NewState}
 when OldVsn   :: string(),
      State    :: #mod_state{},
@@ -412,3 +446,21 @@ when OldVsn   :: string(),
 
 code_change( _OldVsn, State = #mod_state{}, _Extra ) ->
   {ok, State}.
+
+
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+-spec which_trsns( Mod::atom(), Place::atom() ) -> [atom()].
+
+which_trsns( Mod, Place ) when is_atom( Place ) ->
+  
+  F = fun( Trsn, Acc ) ->
+        case lists:member( Place, Mod:preset( Trsn ) ) of
+          false -> Acc;
+          true  -> [Trsn|Acc]
+        end
+      end,
+
+  lists:foldl( F, [], Mod:trsn_lst() ).

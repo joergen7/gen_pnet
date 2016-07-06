@@ -2,27 +2,39 @@
 @copyright 2016 Jörgen Brandt
 @version 0.1.0
 @title A generic Petri net OTP library
-
+@see gen_pnet
+@see cvm2
 @doc
 
 Some applications exhibit behavioral patterns that lend themselves to Petri nets. The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and what other operations might run in parallel.
 
 This OTP library is a framework for programming with Petri nets. It implements a very general form of Petri nets: non-elementary, (in theory) unbounded Petri nets. I.e., tokens may not only be markers but carry additional information. Furthermore, a place can hold any number of tokens not just one.
 
-While many simulation libraries only mimic the concurrent behavior of Petri nets, this library allows the definition of nets with an arbitrary number of transitions competing for a place's tokens neither imposing order in the form of an orverarching loop nor otherwise constraining parallelism.
+While many simulation libraries only mimic the concurrent behavior of Petri nets, the `gen_pnet' library allows the definition of nets with an arbitrary number of transitions competing for a place's tokens neither imposing order in the form of an orverarching loop nor otherwise constraining parallelism.
 
 <h2>Quick Start</h2>
+
+This Quick Start section provides an overview about how Petri nets are started, queried, and manipulated with the `gen_pnet' module. We demonstrate the module's API in terms of a cookie vending machine implemented in the `cvm2' module which is also part of this code repository. Then, we have a look at how the callback functions of the cookie vending machine are implemented.
+
+<h3>Using the Cookie Vending Machine Example</h3>
+
+First we compile the library and start an interactive Erlang shell using <a href="https://github.com/erlang/rebar3">rebar3</a>.
+
 ```
 rebar3 shell
 '''
-
+Now, before trying out the `gen_pnet' module we import the record definitions from `gen_pnet.hrl' for better readability of the examples.
 ```
 rr( "include/gen_pnet.hrl" ).
 [token]
-
+'''
+We can start the cookie vending machine by using `gen_pnet:start_link/3'. Its first argument is the callback module that defines the cookie vending machine. It must implement all callback functions defined in the `gen_pnet' behaviour. The second argument is used to initialize the Petri net while the third argument is an option list, identical to the one used in the `gen_server:start_link/n' functions. `gen_pnet:start_link/3' returns the process id of the just created Petri net process.
+```
 {ok, Pid} = gen_pnet:start_link( cvm2, [], [] ).
 {ok, <0.115.0>}
-
+'''
+Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2'. This Petri net has five places: `coin_slot', `cash_box', `signal', `compartment', and `storage'. Initially, all places are empty except the `storage' place which holds six cookie packages.
+```
 gen_pnet:ls( Pid, coin_slot ).
 {ok, []}
 
@@ -42,10 +54,14 @@ gen_pnet:ls( Pid, storage ).
      #token{place = storage,info = []},
      #token{place = storage,info = []},
      #token{place = storage,info = []}]}
-
+'''
+The way to use this cookie vending machine is to insert a coin by adding an according token to the `coin_slot' place. This is done with the `gen_pnet:add/2' function which takes a reference to a Petri net instance and a token which is added to the net.
+```
 gen_pnet:add( Pid, #token{ place = coin_slot } ).
 ok
-
+'''
+The effect of inserting a coin should be that the coin has wandered to the `cash_box' place, leaving the `coin_slot' place empty again. Also, a cookie token should have appeared in the formerly empty `compartment' place while the number of cookie packages in the `storage' place should have been reduced by 1. We can check this by querying the places as previously.
+```
 gen_pnet:ls( Pid, cash_box ). 
 {ok,[#token{place = cash_box,info = []}]}
 
@@ -59,3 +75,22 @@ gen_pnet:ls( Pid, storage ).
      #token{place = storage,info = []},
      #token{place = storage,info = []}]}
 '''
+<h3>Implementing the Callback Functions</h3>
+
+In the previous section we showed how the `gen_pnet' API can be used to create and use predefined Petri nets. Now, let us have a look at the callback functions that need to be implemented to define a Petri net. These are the six callbacks `init/1', `place_lst/0', `trsn_lst/0', `preset/1', `enum_consume_lst/3', and `fire/3'. We have a look at each of them in turn.
+
+<h4>init/1</h4>
+```
+init( _InitArg ) ->
+  St = #token{ place = storage },
+  {ok, [St, St, St, St, St, St], []}.
+'''
+<h4>place_lst/0</h4>
+```
+place_lst() ->
+  [coin_slot, cash_box, signal, storage, compartment].
+'''
+<h4>trsn_lst/0</h4>
+<h4>preset/1</h4>
+<h4>enum_consume_lst/3</h4>
+<h4>fire/3</h4>
