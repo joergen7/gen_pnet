@@ -33,7 +33,7 @@
 
 init( _InitArg ) ->
   St = #token{ place = storage },
-  {ok, [St, St, St, St, St, St], []}.
+  {ok, [St, St, St], []}.
 
 place_lst() -> [coin_slot, cash_box, signal, storage, compartment].
 

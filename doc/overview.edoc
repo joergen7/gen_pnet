@@ -19,6 +19,11 @@ This Quick Start section provides an overview about how Petri nets are started, 
 
 <h3>Using the Cookie Vending Machine Example</h3>
 
+<img src="cvm2.png" alt="cvm2" width="347" height="191px" />
+
+
+In the following we work with a cookie vending machine example Petri net. The source code for this net is given in cvm2.erl.
+
 First we compile the library and start an interactive Erlang shell using <a href="https://github.com/erlang/rebar3">rebar3</a>.
 
 ```
@@ -51,9 +56,6 @@ gen_pnet:ls( Pid, compartment ).
 gen_pnet:ls( Pid, storage ).
 {ok,[#token{place = storage,info = []},
      #token{place = storage,info = []},
-     #token{place = storage,info = []},
-     #token{place = storage,info = []},
-     #token{place = storage,info = []},
      #token{place = storage,info = []}]}
 '''
 The way to use this cookie vending machine is to insert a coin by adding an according token to the `coin_slot' place. This is done with the `gen_pnet:add/2' function which takes a reference to a Petri net instance and a token which is added to the net.
@@ -71,9 +73,6 @@ gen_pnet:ls( Pid, compartment ).
 
 gen_pnet:ls( Pid, storage ).    
 {ok,[#token{place = storage,info = []},
-     #token{place = storage,info = []},
-     #token{place = storage,info = []},
-     #token{place = storage,info = []},
      #token{place = storage,info = []}]}
 '''
 <h3>Implementing the Callback Functions</h3>
@@ -112,13 +111,16 @@ preset( b ) -> [signal, storage].
 '''
 <h4>enum_consume_lst/3</h4>
 ```
-enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
-  [[C] || C <- CsLst];
+enum_consume_lst( a, #{ coin_slot := CLst }, _UserInfo ) ->
+  [[C] || C <- CLst];
 
 enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
   [[Sg, St] || Sg <- SgLst, St <- StLst].
 '''
 <h4>fire/3</h4>
+The `fire/3' function defines what happens when a given transition fires and what tokens are produced. As arguments it takes the name of the transition, a list of tokens to be consumed which is a randomly selected list from the lists returned by `enum_consume_lst/3', as well as the user info data structure as returned by the `init/1' function.
+
+The cookie vending machine has two transitions `a' and `b'. The `fire/3' function has to defined for both transitions. Transition `a' always consumes single coin tokens.
 ```
 fire( a, [_C], _UserInfo ) ->
   [#token{ place = signal }, #token{ place = cash_box }];
