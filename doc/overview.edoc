@@ -55,6 +55,9 @@ gen_pnet:ls( Pid, compartment ).
 
 gen_pnet:ls( Pid, storage ).
 {ok,[cookie_box,cookie_box,cookie_box]}
+
+gen_pnet:ls( Pid, some_place_that_does_not_exist ).
+{error,no_such_place}
 '''
 The way to use this cookie vending machine is to insert a coin by adding an according token to the `coin_slot' place. This is done with the `gen_pnet:add/2' function which takes a reference to a Petri net instance and a token which is added to the net.
 ```
@@ -71,9 +74,6 @@ gen_pnet:ls( Pid, compartment ).
 
 gen_pnet:ls( Pid, storage ).
 {ok,[cookie_box,cookie_box]}
-
-gen_pnet:ls( Pid, some_place_that_does_not_exist ).
-{error,no_such_place}
 '''
 <h3>Implementing the Callback Functions</h3>
 
