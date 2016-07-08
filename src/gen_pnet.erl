@@ -40,7 +40,7 @@
 %% </ul>
 %% ```
 %%  init( InitArg :: _ )  
-%%    -> {ok, [#token{}], _}
+%%    -> {ok, #{ atom() => [_] }, _}
 %% '''
 %% <h4>place_lst/0</h4>
 %% The `place_lst' function returns a list of atoms denoting the names of the
@@ -63,17 +63,17 @@
 %%  preset( Trsn::atom() )  
 %%    -> [atom()]
 %% '''
-%% <h4>enum_consume_lst/3</h4>
+%% <h4>enum_consume_map/3</h4>
 %% The `enum_consume_lst' function consumes a map associating a place atom with
 %% a list of tokens and returns a list of lists, where each list contains a
 %% combination of tokens that can be consumed firing a given transition. Returns
 %% the empty list if the transition is not enabled. One of the enumerated lists
 %% is chosen to be handed to the `fire/2' function firing the transition.
 %% ```
-%%  enum_consume_lst( Trsn     :: atom(),
-%%                    TokenMap :: #{ atom() => [#token{}]},
+%%  enum_consume_map( Trsn     :: atom(),
+%%                    TokenMap :: #{ atom() => [_]},
 %%                    UserInfo :: _ )
-%%    -> [[#token{}]]
+%%    -> [#{ atom() => [_] }]
 %% '''
 %%
 %% <h4>fire/3</h4>
@@ -81,9 +81,9 @@
 %% return the list of tokens that is produced.
 %% ```
 %%  fire( Trsn       :: atom(),
-%%        ConsumeLst :: [#token{}],
+%%        ConsumeMap :: #{ atom() => [_] },
 %%        UserInfo   :: _ )
-%%    -> [#token{}]
+%%    -> #{ atom() => [_] }
 %% '''
 %%
 %% @end

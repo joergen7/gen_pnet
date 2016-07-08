@@ -109,7 +109,7 @@ trsn_lst() -> [a, b].
 preset( a ) -> [coin_slot];
 preset( b ) -> [signal, storage].
 '''
-<h4>enum_consume_lst/3</h4>
+<h4>enum_consume_map/3</h4>
 ```
 enum_consume_map( a, #{ coin_slot := CLst }, _UserInfo ) ->
   [#{ coin_slot => [C] } || C <- CLst];
