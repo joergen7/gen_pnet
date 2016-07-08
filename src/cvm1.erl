@@ -26,16 +26,14 @@
 
 -behaviour( gen_pnet ).
 
--export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_lst/3,
+-export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_map/3,
           fire/3] ).
-
--include( "include/gen_pnet.hrl" ).
 
 %%====================================================================
 %% gen_pnet callback functions
 %%====================================================================
 
-init( _UserArg ) -> {ok, [], []}.
+init( _UserArg ) -> {ok, #{}, []}.
 
 place_lst() -> [coin_slot, compartment].
 
@@ -43,8 +41,8 @@ trsn_lst() -> [t].
 
 preset( t ) -> [coin_slot].
 
-enum_consume_lst( t, #{ coin_slot := CoinLst }, _UserInfo ) ->
-  [[C] || C <- CoinLst].
+enum_consume_map( t, #{ coin_slot := CLst }, _UserInfo ) ->
+  [#{ coin_slot => [C] } || C <- CLst].
 
-fire( t, [_C], _UserInfo ) ->
-  [#token{ place = compartment }].
+fire( t, _ConsumeLst, _UserInfo ) ->
+  #{ compartment => [cookie_box] }.

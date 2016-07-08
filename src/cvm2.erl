@@ -26,30 +26,29 @@
 
 -behaviour( gen_pnet ).
 
--export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_lst/3,
+-export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_map/3,
           fire/3] ).
 
--include( "include/gen_pnet.hrl" ).
-
 init( _InitArg ) ->
-  St = #token{ place = storage },
-  {ok, [St, St, St], []}.
+  InitMarking = #{ storage => [cookie_box, cookie_box, cookie_box] },
+  {ok, InitMarking, []}.
 
-place_lst() -> [coin_slot, cash_box, signal, storage, compartment].
+place_lst() ->
+  [coin_slot, cash_box, signal, storage, compartment].
 
 trsn_lst() -> [a, b].
 
 preset( a ) -> [coin_slot];
 preset( b ) -> [signal, storage].
 
-enum_consume_lst( a, #{ coin_slot := CsLst }, _UserInfo ) ->
-  [[C] || C <- CsLst];
+enum_consume_map( a, #{ coin_slot := CLst }, _UserInfo ) ->
+  [#{ coin_slot => [C] } || C <- CLst];
 
-enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
-  [[Sg, St] || Sg <- SgLst, St <- StLst].
+enum_consume_map( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
+  [#{ signal => [Sg], storage => [St] } || Sg <- SgLst, St <- StLst].
 
-fire( a, [_C], _UserInfo ) ->
-  [#token{ place = signal }, #token{ place = cash_box }];
+fire( a, _ConsumeMap, _UserInfo ) ->
+  #{ signal => [sig], cash_box => [coin] };
 
-fire( b, [_Sg, _St], _UserInfo ) ->
-  [#token{ place = compartment }].
+fire( b, _ConsumeMap, _UserInfo ) ->
+  #{ compartment => [cookie_box]}.

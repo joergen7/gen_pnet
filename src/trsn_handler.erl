@@ -29,8 +29,6 @@
 -export( [init/1, handle_call/2, handle_info/2, terminate/2, handle_event/2,
           code_change/3] ).
 
--include( "gen_pnet.hrl" ).
-
 %%====================================================================
 %% Internal record definitions
 %%====================================================================
@@ -97,13 +95,13 @@ handle_event( place_update,
   io:format( "trsn_handler:handle_event( place_update, #mod_state{ trsn = ~p } )~n", [Trsn] ),
 
   % query token map showing what tokens are on what place
-  TokenMap = token_map( Mod, PnetPid, Trsn ),
+  TokenMap = gen_pnet:get_token_map( PnetPid, Mod:preset( Trsn ) ),
 
   % get all possibilities for this transition to consume tokens
-  Ecl = Mod:enum_consume_lst( Trsn, TokenMap, UserInfo ),
+  Cml = Mod:enum_consume_map( Trsn, TokenMap, UserInfo ),
 
   % is there any combination of tokens we can consume?
-  case Ecl of
+  case Cml of
 
     % if no combination is possible we're done
     [] -> {ok, State};
@@ -112,10 +110,10 @@ handle_event( place_update,
     [_|_] ->
 
       % pick one combination at random
-      ConsumeLst = pick_from( Ecl ),
+      ConsumeMap = pick_from( Cml ),
 
       % attempt to get a lock on the tokens we want to consume
-      case gen_pnet:consume( PnetPid, ConsumeLst ) of
+      case gen_pnet:consume( PnetPid, ConsumeMap ) of
 
         % if the lock is unavailable we have to try again
         {error, stale_request} -> handle_event( place_update, State );
@@ -125,15 +123,15 @@ handle_event( place_update,
 
           F = fun() ->
 
-            io:format( "Firing transition as ~p~n", [self()] ),
+                io:format( "Firing transition as ~p~n", [self()] ),
 
-            % fire the transition
-            ProduceLst = Mod:fire( Trsn, ConsumeLst, UserInfo ),
+                % fire the transition
+                ProduceMap = Mod:fire( Trsn, ConsumeMap, UserInfo ),
 
-            % now write the produced tokens back
-            gen_pnet:produce( PnetPid, ProduceLst )
+                % now write the produced tokens back
+                gen_pnet:produce( PnetPid, ProduceMap )
 
-          end,
+              end,
 
           % fire transition in an extra process
           _ChildPid = spawn_link( F ),
@@ -153,18 +151,4 @@ pick_from( Lst ) when is_list( Lst ) ->
   lists:nth( rand:uniform( length( Lst ) ), Lst ).
 
 
--spec token_map( Mod::atom(), PnetPid::pid(), Trsn::atom() ) ->
-  #{ atom() => [#token{}] }.
 
-token_map( Mod, PnetPid, Trsn )
-when is_atom( Mod ),
-     is_pid( PnetPid ),
-     is_atom( Trsn ) ->
-
-
-  F = fun( Place, Acc ) ->
-        {ok, Lst} = gen_pnet:ls( PnetPid, Place ),
-        Acc#{ Place => Lst }
-      end,
-
-  lists:foldl( F, #{}, Mod:preset( Trsn ) ).

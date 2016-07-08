@@ -94,18 +94,16 @@
 -behaviour( gen_server ).
 
 -export( [start_link/3, start_link/4, stop/1, ls/2, consume/2, produce/2,
-          add/2] ).
+          add/3, get_token_map/2] ).
 -export( [init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
           code_change/3] ).
-
--include( "gen_pnet.hrl" ).
 
 %%====================================================================
 %% Callback function definition
 %%====================================================================
 
 -callback init( InitArg::_ ) ->
-  {ok, InitMarking::[#token{}], UserInfo::_}.
+  {ok, InitMarking::#{atom() => [_]}, UserInfo::_}.
 
 -callback place_lst()
   -> PlaceLst::[atom()].
@@ -116,45 +114,47 @@
 -callback preset( Trsn::atom() )
   -> PlaceLst::[atom()].
 
--callback enum_consume_lst( Trsn     :: atom(),
-                            TokenMap :: #{ atom() => [#token{}] },
+-callback enum_consume_map( Trsn     :: atom(),
+                            TokenMap :: #{ atom() => [_] },
                             UserInfo :: _)
-  -> [[#token{}]].
+  -> [#{ atom() => [_] }].
 
 -callback fire( Trsn       :: atom(),
-                ConsumeLst :: [#token{}],
+                ConsumeMap :: #{ atom() => [_] },
                 UserInfo   :: _ )
-  -> ProduceLst::[#token{}].
+  -> ProduceLst::#{ atom() => [_] }.
 
 
 %%====================================================================
 %% Internal record definitions
 %%====================================================================
 
--record( mod_state, { mod, user_info, mgr_map, token_lst = [] } ).
+-record( mod_state, { mod, user_info, mgr_map, token_map = #{} } ).
 
 
 %%====================================================================
 %% Data types
 %%====================================================================
 
--type flag()        :: trace
-                     | log
-                     | {logfile, File::string()}
-                     | statistics
-                     | debug.
+-type flag()         :: trace
+                      | log
+                      | {logfile, File::string()}
+                      | statistics
+                      | debug.
 
--type option()      :: {timeout, Timeout::pos_integer()}
-                     | {debug, [Flag::flag()]}.
+-type option()       :: {timeout, Timeout::pos_integer()}
+                      | {debug, [Flag::flag()]}.
 
--type server_name() :: {local, atom()}
-                     | {global, atom()}
-                     | {via, atom(), _}.
+-type server_name()  :: {local, atom()}
+                      | {global, atom()}
+                      | {via, atom(), _}.
 
--type init_arg()    :: {Mod::atom(), UserArg::_}.
+-type init_arg()     :: {Mod::atom(), UserArg::_}.
+
 
 -type call_reply()   :: ok
-                      | {ok, [#token{}]}
+                      | {ok, [_]}
+                      | {ok, #{ atom() => [_] }}
                       | {error, stale_request
                               | no_such_place
                               | unsupported_op}.
@@ -206,18 +206,23 @@ stop( ServerRef ) ->
 %% @doc Lists all tokens associated to a given place.
 
 -spec ls( ServerRef::_, Place::atom() ) ->
-  {ok, [#token{}]} | {error, no_such_place}.
+  {ok, [_]} | {error, no_such_place}.
 
 ls( ServerRef, Place ) when is_atom( Place ) ->
   gen_server:call( ServerRef, {ls, Place} ).
 
+-spec get_token_map( ServerRef::_, Pl::[atom()] ) -> #{ atom() => [_] }.
+
+get_token_map( ServerRef, Pl ) when is_list( Pl ) ->
+  gen_server:call( ServerRef, {get_token_map, Pl} ).
+
 %% @doc Removes a specified list of tokens from the Petri net.
 
--spec consume( ServerRef::_, ConsumeLst::[#token{}] ) ->
+-spec consume( ServerRef::_, ConsumeMap::#{ atom() => [_] } ) ->
   ok | {error, stale_request}.
 
-consume( ServerRef, ConsumeLst ) when is_list( ConsumeLst ) ->
-  gen_server:call( ServerRef, {consume, ConsumeLst} ).
+consume( ServerRef, ConsumeMap ) when is_map( ConsumeMap ) ->
+  gen_server:call( ServerRef, {consume, ConsumeMap} ).
 
 %% @see add/2
 %% @see consume/3
@@ -226,19 +231,19 @@ consume( ServerRef, ConsumeLst ) when is_list( ConsumeLst ) ->
 %% In contrast to `add/2', this function throws an error if one of the tokens
 %% specifies a non-existent place causing the Petri net instance to crash.
 
--spec produce( ServerRef::_, ProduceLst::[#token{}] ) -> ok.
+-spec produce( ServerRef::_, ProduceMap::#{ atom() => [_] } ) -> ok.
 
-produce( ServerRef, ProduceLst ) when is_list( ProduceLst ) ->
-  gen_server:call( ServerRef, {produce, ProduceLst} ).
+produce( ServerRef, ProduceMap ) when is_map( ProduceMap ) ->
+  gen_server:call( ServerRef, {produce, ProduceMap} ).
 
 
 %% @doc Adds a single token to the Petri net.
 %% @see produce/2
 
--spec add( ServerRef::_, Token::#token{} ) -> ok.
+-spec add( ServerRef::_, Place::atom(), Token::_ ) -> ok.
 
-add( ServerRef, Token = #token{} ) ->
-  gen_server:call( ServerRef, {add, Token} ).
+add( ServerRef, Place, Token ) when is_atom( Place ) ->
+  gen_server:call( ServerRef, {add, Place, Token} ).
 
 %%====================================================================
 %% gen_server callback functions
@@ -252,21 +257,41 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
 
   io:format( "gen_pnet:init() {~p, ~p} )~n", [Mod, UserArg] ),
 
-  {ok, TokenLst, UserInfo} = Mod:init( UserArg ),
+  % get initial marking and user info
+  {ok, TokenMap, UserInfo} = Mod:init( UserArg ),
 
-  ok = lists:foreach( fun( #token{ place = P } ) ->
+  % check if all mentioned places do exist
+  ok = lists:foreach( fun( P ) ->
                         case lists:member( P, Mod:place_lst() ) of
                           true  -> ok;
                           false -> error( {no_such_place, P} )
                         end
-                      end, TokenLst ),
+                      end,
+                      maps:keys( TokenMap ) ),
+
+  % check if all existing places were mentioned
+  TokenMap1 = lists:foldl( fun( P, Acc ) ->
+                        case maps:is_key( P, TokenMap ) of
+                          true  -> Acc;
+                          false -> Acc#{ P => [] }
+                        end
+                      end,
+                      TokenMap,
+                      Mod:place_lst() ),
+
 
   F = fun( Place, Acc ) ->
 
+        % start an event manager for each place
         {ok, Pid} = gen_event:start_link(),
 
         G = fun( Trsn ) ->
-              gen_event:add_handler( Pid, trsn_handler, {Mod, UserInfo, self(), Trsn} )
+
+              % register an event handler for each transition having this place
+              % in its preset
+              gen_event:add_handler( Pid,
+                                     trsn_handler,
+                                     {Mod, UserInfo, self(), Trsn} )
             end,
 
         ok = lists:foreach( G, which_trsns( Mod, Place ) ),
@@ -283,7 +308,7 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
   State    = #mod_state{ mod       = Mod,
                          user_info = UserInfo,
                          mgr_map   = MgrMap,
-                         token_lst = TokenLst },
+                         token_map = TokenMap1 },
 
   {ok, State}.
 
@@ -299,8 +324,22 @@ when Request  :: _,
 handle_call( stop, _From, State = #mod_state{} ) ->
   {stop, normal, stopped, State};
 
+handle_call( {get_token_map, Pl}, _From,
+             State = #mod_state{ token_map = TokenMap } )
+when is_list( Pl ),
+     is_map( TokenMap ) ->
+
+  F = fun( P, Acc ) ->
+        #{ P := L } = TokenMap,
+        Acc#{ P => L }
+      end,
+
+  Tm = lists:foldl( F, #{}, Pl ),
+
+  {reply, Tm, State};
+
 handle_call( {ls, Place}, _From,
-             State = #mod_state{ mod = Mod, token_lst = TokenLst } )
+             State = #mod_state{ mod = Mod, token_map = TokenMap } )
 when is_atom( Place ) ->
 
   case lists:member( Place, Mod:place_lst() ) of
@@ -309,43 +348,65 @@ when is_atom( Place ) ->
       {reply, {error, no_such_place}, State};
 
     true  ->
-      Result = [X || X = #token{ place = P } <- TokenLst, P =:= Place],
+      #{ Place := Result } = TokenMap,
       {reply, {ok, Result}, State}
 
   end;
 
-handle_call( {consume, ConsumeLst}, _From,
-             State = #mod_state{ token_lst = TokenLst } )
-when is_list( ConsumeLst ) ->
+handle_call( {consume, ConsumeMap}, _From,
+             State = #mod_state{ token_map = TokenMap } )
+when is_map( ConsumeMap ) ->
 
-  io:format( "gen_pnet:handle_call( {consume, ~p}, _, ~p )~n", [ConsumeLst, State] ),
+  io:format( "gen_pnet:handle_call( {consume, ~p}, _, ~p )~n",
+             [ConsumeMap, State] ),
 
-  TokenLst1 = TokenLst--ConsumeLst,
-  L = length( TokenLst )-length( ConsumeLst ),
-  case length( TokenLst1 ) of
+  F = fun( _P, {error, stale_request} ) -> {error, stale_request};
+         ( P, Acc ) ->
 
-    L ->
+        #{ P := ConsumeLst } = ConsumeMap,
+        #{ P := TokenLst } = TokenMap,
 
-      State1 = State#mod_state{ token_lst = TokenLst1 },
+        TokenLst1 = TokenLst--ConsumeLst,
+        L = length( TokenLst )-length( ConsumeLst ),
+        case length( TokenLst1 ) of
 
-      io:format( "  success --> ~p~n", [State1] ),
+          L ->
 
-      {reply, ok, State1};
+            Acc#{ P => TokenLst1 };
 
-    _ ->
+          _ ->
 
-      io:format( "  error: stale request" ),
+            {error, stale_request}
 
-      {reply, {error, stale_request}, State}
+        end
+      end,
+
+  case lists:foldl( F, TokenMap, maps:keys( ConsumeMap ) ) of
+
+    {error, stale_request} ->
+
+      io:format( "  !!error: stale_request~n" ),
+
+      {reply, {error, stale_request}, State};
+
+    TokenMap1 when is_map( TokenMap1 ) ->
+
+      io:format( "  **success~n~p~n", [TokenMap1] ),
+
+      {reply, ok, State#mod_state{ token_map = TokenMap1 }}
 
   end;
 
-handle_call( {add, Token = #token{ place = Place }}, _From,
-             State = #mod_state{ mod = Mod, mgr_map = MgrMap, token_lst = TokenLst } )
+
+
+handle_call( {add, Place, Token}, _From,
+              State = #mod_state{ mod       = Mod,
+                                  mgr_map   = MgrMap,
+                                  token_map = TokenMap } )
 when is_atom( Place ),
      is_atom( Mod ),
      is_map( MgrMap ),
-     is_list( TokenLst ) ->
+     is_map( TokenMap ) ->
 
   case lists:member( Place, Mod:place_lst() ) of
 
@@ -358,37 +419,45 @@ when is_atom( Place ),
       io:format( "notifying mgr ...~n" ),
       gen_event:notify( Mgr, place_update ),
 
-      {reply, ok, State#mod_state{ token_lst = [Token|TokenLst] }}
+      #{ Place := TokenLst } = TokenMap,
+      TokenMap1 = TokenMap#{ Place => [Token|TokenLst] },
+
+      {reply, ok, State#mod_state{ token_map = TokenMap1 }}
 
   end;
 
-handle_call( {produce, AddLst}, _From,
+handle_call( {produce, AddMap}, _From,
              State = #mod_state{ mod       = Mod,
                                  mgr_map   = MgrMap,
-                                 token_lst = TokenLst } )
-when is_list( AddLst ) ->
+                                 token_map = TokenMap } )
+when is_map( AddMap ),
+     is_atom( Mod ),
+     is_map( MgrMap ),
+     is_map( TokenMap ) ->
 
   PlaceLst = Mod:place_lst(),
+  Pl = maps:keys( AddMap ),
 
-  F = fun( Token = #token{ place = Place }, Acc ) ->
+  F = fun( Place, Acc ) ->
         case lists:member( Place, PlaceLst ) of
           false -> error( {no_such_place, Place} );
-          true  -> [Token|Acc]
+          true  ->
+            #{ Place := AddLst } = AddMap,
+            #{ Place := TokenLst } = TokenMap,
+            Acc#{ Place => AddLst++TokenLst }
         end
       end,
 
-  TokenLst1 = lists:foldl( F, TokenLst, AddLst ),
-
-  NotifyLst = lists:usort( [P || #token{ place = P } <- AddLst] ),
+  TokenMap1 = lists:foldl( F, TokenMap, Pl ),
 
   G = fun( P ) ->
         #{ P := Mgr } = MgrMap,
         gen_event:notify( Mgr, place_update )
       end,
 
-  ok = lists:foreach( G, NotifyLst ),
+  ok = lists:foreach( G, Pl ),
 
-  {reply, ok, State#mod_state{ token_lst = TokenLst1 }};
+  {reply, ok, State#mod_state{ token_map = TokenMap1 }};
 
 handle_call( Request, _From, State = #mod_state{ mod = Mod } ) ->
 

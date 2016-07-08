@@ -54,26 +54,26 @@ gen_pnet:ls( Pid, compartment ).
 {ok, []}
 
 gen_pnet:ls( Pid, storage ).
-{ok,[#token{place = storage,info = []},
-     #token{place = storage,info = []},
-     #token{place = storage,info = []}]}
+{ok,[cookie_box,cookie_box,cookie_box]}
 '''
 The way to use this cookie vending machine is to insert a coin by adding an according token to the `coin_slot' place. This is done with the `gen_pnet:add/2' function which takes a reference to a Petri net instance and a token which is added to the net.
 ```
-gen_pnet:add( Pid, #token{ place = coin_slot } ).
+gen_pnet:add( Pid, coin_slot, coin ).
 ok
 '''
 The effect of inserting a coin should be that the coin has wandered to the `cash_box' place, leaving the `coin_slot' place empty again. Also, a cookie token should have appeared in the formerly empty `compartment' place while the number of cookie packages in the `storage' place should have been reduced by 1. We can check this by querying the places as previously.
 ```
 gen_pnet:ls( Pid, cash_box ). 
-{ok,[#token{place = cash_box,info = []}]}
+{ok,[coin]}
 
 gen_pnet:ls( Pid, compartment ).
-{ok,[#token{place = compartment,info = []}]}
+{ok,[cookie_box]}
 
-gen_pnet:ls( Pid, storage ).    
-{ok,[#token{place = storage,info = []},
-     #token{place = storage,info = []}]}
+gen_pnet:ls( Pid, storage ).
+{ok,[cookie_box,cookie_box]}
+
+gen_pnet:ls( Pid, some_place_that_does_not_exist ).
+{error,no_such_place}
 '''
 <h3>Implementing the Callback Functions</h3>
 
@@ -92,8 +92,8 @@ The `init/1' function gives us the chance to define the initial marking of the P
 
 ```
 init( _InitArg ) ->
-  St = #token{ place = storage },
-  {ok, [St, St, St, St, St, St], []}.
+  InitMarking = #{ storage => [cookie_box, cookie_box, cookie_box] },
+  {ok, InitMarking, []}.
 '''
 <h4>place_lst/0</h4>
 ```
@@ -111,20 +111,20 @@ preset( b ) -> [signal, storage].
 '''
 <h4>enum_consume_lst/3</h4>
 ```
-enum_consume_lst( a, #{ coin_slot := CLst }, _UserInfo ) ->
-  [[C] || C <- CLst];
+enum_consume_map( a, #{ coin_slot := CLst }, _UserInfo ) ->
+  [#{ coin_slot => [C] } || C <- CLst];
 
-enum_consume_lst( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
-  [[Sg, St] || Sg <- SgLst, St <- StLst].
+enum_consume_map( b, #{ signal := SgLst, storage := StLst }, _UserInfo ) ->
+  [#{ signal => [Sg], storage => [St] } || Sg <- SgLst, St <- StLst].
 '''
 <h4>fire/3</h4>
 The `fire/3' function defines what happens when a given transition fires and what tokens are produced. As arguments it takes the name of the transition, a list of tokens to be consumed which is a randomly selected list from the lists returned by `enum_consume_lst/3', as well as the user info data structure as returned by the `init/1' function.
 
 The cookie vending machine has two transitions `a' and `b'. The `fire/3' function has to defined for both transitions. Transition `a' always consumes single coin tokens.
 ```
-fire( a, [_C], _UserInfo ) ->
-  [#token{ place = signal }, #token{ place = cash_box }];
+fire( a, _ConsumeMap, _UserInfo ) ->
+  #{ signal => [sig], cash_box => [coin] };
 
-fire( b, [_Sg, _St], _UserInfo ) ->
-  [#token{ place = compartment }].
+fire( b, _ConsumeMap, _UserInfo ) ->
+  #{ compartment => [cookie_box]}.
 '''
