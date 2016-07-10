@@ -29,11 +29,6 @@ First we compile the library and start an interactive Erlang shell using <a href
 ```
 rebar3 shell
 '''
-Now, before trying out the `gen_pnet' module we import the record definitions from `gen_pnet.hrl' for better readability of the examples.
-```
-rr( "include/gen_pnet.hrl" ).
-[token]
-'''
 We can start the cookie vending machine by using `gen_pnet:start_link/3'. Its first argument is the callback module that defines the cookie vending machine. It must implement all callback functions defined in the `gen_pnet' behaviour. The second argument is used to initialize the Petri net while the third argument is an option list, identical to the one used in the `gen_server:start_link/n' functions. `gen_pnet:start_link/3' returns the process id of the just created Petri net process.
 ```
 {ok, Pid} = gen_pnet:start_link( cvm2, [], [] ).
