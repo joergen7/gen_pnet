@@ -71,7 +71,7 @@
 %% is chosen to be handed to the `fire/2' function firing the transition.
 %% ```
 %%  enum_consume_map( Trsn     :: atom(),
-%%                    TokenMap :: #{ atom() => [_]},
+%%                    MarkingMap :: #{ atom() => [_]},
 %%                    UserInfo :: _ )
 %%    -> [#{ atom() => [_] }]
 %% '''
@@ -94,7 +94,7 @@
 -behaviour( gen_server ).
 
 -export( [start_link/3, start_link/4, stop/1, ls/2, consume/2, produce/2,
-          add/3, get_token_map/2] ).
+          add/3, get_marking_map/2] ).
 -export( [init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
           code_change/3] ).
 
@@ -115,7 +115,7 @@
   -> PlaceLst::[atom()].
 
 -callback enum_consume_map( Trsn     :: atom(),
-                            TokenMap :: #{ atom() => [_] },
+                            MarkingMap :: #{ atom() => [_] },
                             UserInfo :: _)
   -> [#{ atom() => [_] }].
 
@@ -129,7 +129,7 @@
 %% Internal record definitions
 %%====================================================================
 
--record( mod_state, { mod, user_info, mgr_map, token_map = #{} } ).
+-record( mod_state, { mod, user_info, mgr_map, marking_map = #{} } ).
 
 
 %%====================================================================
@@ -211,10 +211,10 @@ stop( ServerRef ) ->
 ls( ServerRef, Place ) when is_atom( Place ) ->
   gen_server:call( ServerRef, {ls, Place} ).
 
--spec get_token_map( ServerRef::_, Pl::[atom()] ) -> #{ atom() => [_] }.
+-spec get_marking_map( ServerRef::_, Pl::[atom()] ) -> #{ atom() => [_] }.
 
-get_token_map( ServerRef, Pl ) when is_list( Pl ) ->
-  gen_server:call( ServerRef, {get_token_map, Pl} ).
+get_marking_map( ServerRef, Pl ) when is_list( Pl ) ->
+  gen_server:call( ServerRef, {get_marking_map, Pl} ).
 
 %% @doc Removes a specified list of tokens from the Petri net.
 
@@ -224,7 +224,7 @@ get_token_map( ServerRef, Pl ) when is_list( Pl ) ->
 consume( ServerRef, ConsumeMap ) when is_map( ConsumeMap ) ->
   gen_server:call( ServerRef, {consume, ConsumeMap} ).
 
-%% @see add/2
+%% @see add/3
 %% @see consume/3
 %% @doc Adds a specified list of tokens to the Petri net.
 %%
@@ -258,7 +258,7 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
   io:format( "gen_pnet:init() {~p, ~p} )~n", [Mod, UserArg] ),
 
   % get initial marking and user info
-  {ok, TokenMap, UserInfo} = Mod:init( UserArg ),
+  {ok, MarkingMap, UserInfo} = Mod:init( UserArg ),
 
   % check if all mentioned places do exist
   ok = lists:foreach( fun( P ) ->
@@ -267,48 +267,34 @@ init( {Mod, UserArg} ) when is_atom( Mod ) ->
                           false -> error( {no_such_place, P} )
                         end
                       end,
-                      maps:keys( TokenMap ) ),
+                      maps:keys( MarkingMap ) ),
 
   % check if all existing places were mentioned
-  TokenMap1 = lists:foldl( fun( P, Acc ) ->
-                        case maps:is_key( P, TokenMap ) of
+  MarkingMap1 = lists:foldl( fun( P, Acc ) ->
+                        case maps:is_key( P, MarkingMap ) of
                           true  -> Acc;
                           false -> Acc#{ P => [] }
                         end
                       end,
-                      TokenMap,
+                      MarkingMap,
                       Mod:place_lst() ),
 
 
-  F = fun( Place, Acc ) ->
-
-        % start an event manager for each place
-        {ok, Pid} = gen_event:start_link(),
-
-        G = fun( Trsn ) ->
-
-              % register an event handler for each transition having this place
-              % in its preset
-              gen_event:add_handler( Pid,
-                                     trsn_handler,
-                                     {Mod, UserInfo, self(), Trsn} )
-            end,
-
-        ok = lists:foreach( G, which_trsns( Mod, Place ) ),
-
-        Acc#{ Place => Pid }
-
+  F = fun( Trsn, Acc ) ->
+        PnetPid = self(),
+        Pid = spawn_link( fun() -> trsn_loop( PnetPid, Mod, Trsn, UserInfo ) end ),
+        Acc#{ Trsn => Pid }
       end,
 
 
-  MgrMap = lists:foldl( F, #{}, Mod:place_lst() ),
+  MgrMap = lists:foldl( F, #{}, Mod:trsn_lst() ),
 
 
   % create pnet state
   State    = #mod_state{ mod       = Mod,
                          user_info = UserInfo,
                          mgr_map   = MgrMap,
-                         token_map = TokenMap1 },
+                         marking_map = MarkingMap1 },
 
   {ok, State}.
 
@@ -324,47 +310,61 @@ when Request  :: _,
 handle_call( stop, _From, State = #mod_state{} ) ->
   {stop, normal, stopped, State};
 
-handle_call( {get_token_map, Pl}, _From,
-             State = #mod_state{ token_map = TokenMap } )
+handle_call( {get_marking_map, Pl}, _From,
+             State = #mod_state{ marking_map = MarkingMap } )
 when is_list( Pl ),
-     is_map( TokenMap ) ->
+     is_map( MarkingMap ) ->
+
+  io:format( "--> starting get_marking_map.~n" ),
+
 
   F = fun( P, Acc ) ->
-        #{ P := L } = TokenMap,
+        #{ P := L } = MarkingMap,
         Acc#{ P => L }
       end,
 
   Tm = lists:foldl( F, #{}, Pl ),
 
+  io:format( "<-- terminating get_marking_map.~n" ),
+
+
   {reply, Tm, State};
 
 handle_call( {ls, Place}, _From,
-             State = #mod_state{ mod = Mod, token_map = TokenMap } )
+             State = #mod_state{ mod = Mod, marking_map = MarkingMap } )
 when is_atom( Place ) ->
+
+  io:format( "--> starting ls.~n" ),
+
 
   case lists:member( Place, Mod:place_lst() ) of
 
     false ->
+
+      io:format( "<-- terminating ls.~n" ),
+
       {reply, {error, no_such_place}, State};
 
     true  ->
-      #{ Place := Result } = TokenMap,
+      #{ Place := Result } = MarkingMap,
+
+      io:format( "<-- terminating ls.~n" ),
+
       {reply, {ok, Result}, State}
 
   end;
 
 handle_call( {consume, ConsumeMap}, _From,
-             State = #mod_state{ token_map = TokenMap } )
+             State = #mod_state{ marking_map = MarkingMap } )
 when is_map( ConsumeMap ) ->
 
-  io:format( "gen_pnet:handle_call( {consume, ~p}, _, ~p )~n",
-             [ConsumeMap, State] ),
+  io:format( "--> starting consume.~n" ),
 
   F = fun( _P, {error, stale_request} ) -> {error, stale_request};
          ( P, Acc ) ->
 
         #{ P := ConsumeLst } = ConsumeMap,
-        #{ P := TokenLst } = TokenMap,
+        #{ P := TokenLst } = MarkingMap,
 
         TokenLst1 = TokenLst--ConsumeLst,
         L = length( TokenLst )-length( ConsumeLst ),
@@ -372,28 +372,34 @@ when is_map( ConsumeMap ) ->
 
           L ->
 
+
+
             Acc#{ P => TokenLst1 };
 
           _ ->
+
+
 
             {error, stale_request}
 
         end
       end,
 
-  case lists:foldl( F, TokenMap, maps:keys( ConsumeMap ) ) of
+  case lists:foldl( F, MarkingMap, maps:keys( ConsumeMap ) ) of
 
     {error, stale_request} ->
 
       io:format( "  !!error: stale_request~n" ),
 
+      io:format( "<-- terminating consume.~n" ),
       {reply, {error, stale_request}, State};
 
-    TokenMap1 when is_map( TokenMap1 ) ->
+    MarkingMap1 when is_map( MarkingMap1 ) ->
 
-      io:format( "  **success~n~p~n", [TokenMap1] ),
+      io:format( "  **success~n~p~n", [MarkingMap1] ),
+      io:format( "<-- terminating consume.~n" ),
 
-      {reply, ok, State#mod_state{ token_map = TokenMap1 }}
+      {reply, ok, State#mod_state{ marking_map = MarkingMap1 }}
 
   end;
 
@@ -402,11 +408,12 @@ when is_map( ConsumeMap ) ->
 handle_call( {add, Place, Token}, _From,
               State = #mod_state{ mod       = Mod,
                                   mgr_map   = MgrMap,
-                                  token_map = TokenMap } )
+                                  marking_map = MarkingMap } )
 when is_atom( Place ),
      is_atom( Mod ),
      is_map( MgrMap ),
-     is_map( TokenMap ) ->
+     is_map( MarkingMap ) ->
+
 
   case lists:member( Place, Mod:place_lst() ) of
 
@@ -415,25 +422,38 @@ when is_atom( Place ),
 
     true ->
 
-      #{ Place := Mgr } = MgrMap,
-      io:format( "notifying mgr ...~n" ),
-      gen_event:notify( Mgr, place_update ),
+      Tl = which_trsns( Mod, Place ),
 
-      #{ Place := TokenLst } = TokenMap,
-      TokenMap1 = TokenMap#{ Place => [Token|TokenLst] },
+      F = fun( T ) ->
 
-      {reply, ok, State#mod_state{ token_map = TokenMap1 }}
+            #{ T := Mgr } = MgrMap,
+            io:format( "notifying mgr for ~p ...~n", [T] ),
+            Mgr ! notify
+
+          end,
+
+      ok = lists:foreach( F, Tl ),
+
+      #{ Place := TokenLst } = MarkingMap,
+      MarkingMap1 = MarkingMap#{ Place => [Token|TokenLst] },
+
+      io:format( "<-- terminating add.~n" ),
+
+      {reply, ok, State#mod_state{ marking_map = MarkingMap1 }}
 
   end;
 
 handle_call( {produce, AddMap}, _From,
              State = #mod_state{ mod       = Mod,
                                  mgr_map   = MgrMap,
-                                 token_map = TokenMap } )
+                                 marking_map = MarkingMap } )
 when is_map( AddMap ),
      is_atom( Mod ),
      is_map( MgrMap ),
-     is_map( TokenMap ) ->
+     is_map( MarkingMap ) ->
+
+  io:format( "--> starting produce.~n" ),
+
 
   PlaceLst = Mod:place_lst(),
   Pl = maps:keys( AddMap ),
@@ -443,21 +463,28 @@ when is_map( AddMap ),
           false -> error( {no_such_place, Place} );
           true  ->
             #{ Place := AddLst } = AddMap,
-            #{ Place := TokenLst } = TokenMap,
+            #{ Place := TokenLst } = MarkingMap,
             Acc#{ Place => AddLst++TokenLst }
         end
       end,
 
-  TokenMap1 = lists:foldl( F, TokenMap, Pl ),
+  MarkingMap1 = lists:foldl( F, MarkingMap, Pl ),
 
-  G = fun( P ) ->
-        #{ P := Mgr } = MgrMap,
-        gen_event:notify( Mgr, place_update )
+
+  Tl = lists:usort( lists:flatmap( fun( P ) -> which_trsns( Mod, P ) end, Pl ) ),
+
+  G = fun( T ) ->
+        #{ T := Mgr } = MgrMap,
+        io:format( "notifying mgr ...~n" ),
+        Mgr ! notify
       end,
 
-  ok = lists:foreach( G, Pl ),
+  ok = lists:foreach( G, Tl ),
 
-  {reply, ok, State#mod_state{ token_map = TokenMap1 }};
+  io:format( "<-- terminating produce.~n" ),
+
+
+  {reply, ok, State#mod_state{ marking_map = MarkingMap1 }};
 
 handle_call( Request, _From, State = #mod_state{ mod = Mod } ) ->
 
@@ -537,3 +564,98 @@ which_trsns( Mod, Place ) when is_atom( Place ) ->
       end,
 
   lists:foldl( F, [], Mod:trsn_lst() ).
+
+
+-spec pick_from( Lst::[_] ) -> Item::_.
+
+pick_from( Lst ) when is_list( Lst ) ->
+  lists:nth( rand:uniform( length( Lst ) ), Lst ).
+
+
+
+
+
+-spec trsn_loop( PnetPid, Mod, Trsn, UserInfo ) -> no_return()
+when PnetPid  :: pid(),
+     Mod      :: atom(),
+     Trsn     :: atom(),
+     UserInfo :: _.
+
+trsn_loop( PnetPid, Mod, Trsn, UserInfo )
+when is_pid( PnetPid ),
+     is_atom( Mod ),
+     is_atom( Trsn ) ->
+
+  receive
+
+    notify ->
+      ok = handle_notify( PnetPid, Mod, Trsn, UserInfo ),
+      trsn_loop( PnetPid, Mod, Trsn, UserInfo );
+
+    _      ->
+      trsn_loop( PnetPid, Mod, Trsn, UserInfo )
+
+  end.
+
+
+
+-spec handle_notify( PnetPid, Mod, Trsn, UserInfo ) -> ok
+when PnetPid  :: pid(),
+     Mod      :: atom(),
+     Trsn     :: atom(),
+     UserInfo :: _.
+
+handle_notify( PnetPid, Mod, Trsn, UserInfo ) ->
+
+  io:format( "Handling transition ~p ...~n", [Trsn] ),
+
+  % query token map showing what tokens are on what place
+  MarkingMap = gen_pnet:get_marking_map( PnetPid, Mod:preset( Trsn ) ),
+
+  io:format( "relevant marking map is~n~p~n", [MarkingMap] ),
+
+  % get all possibilities for this transition to consume tokens
+  Cml = Mod:enum_consume_map( Trsn, MarkingMap, UserInfo ),
+
+  % is there any combination of tokens we can consume?
+  case Cml of
+
+    % if no combination is possible we're done
+    [] -> ok;
+
+    % if there are possible combinations
+    [_|_] ->
+
+      % pick one combination at random
+      ConsumeMap = pick_from( Cml ),
+
+      % attempt to get a lock on the tokens we want to consume
+      case gen_pnet:consume( PnetPid, ConsumeMap ) of
+
+        % if the lock is unavailable we have to try again
+        {error, stale_request} -> handle_notify( PnetPid, Mod, Trsn, UserInfo );
+
+        % if we managed to get a lock
+        ok ->
+
+          F = fun() ->
+
+                io:format( "Firing transition as ~p~n", [self()] ),
+
+                % fire the transition
+                ProduceMap = Mod:fire( Trsn, ConsumeMap, UserInfo ),
+
+                % now write the produced tokens back
+                gen_pnet:produce( PnetPid, ProduceMap )
+
+              end,
+
+          % fire transition in an extra process
+          _ChildPid = spawn_link( F ),
+
+          % meanwhile, attempt to continue firing this transition
+          handle_notify( PnetPid, Mod, Trsn, UserInfo )
+      end
+  end.
+
+
