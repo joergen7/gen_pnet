@@ -32,7 +32,8 @@
 %% An initialization function called when the gen_pnet module is started.
 %% Returns
 %% <ul>
-%%   <li>the initial marking of the Petri net in the form of a token list</li>
+%%   <li>the initial marking of the Petri net in the form of a map associating a
+%%       place with a list of tokens</li>
 %%   <li>a user-defined data structure that is made available when enumerating
 %%       possible consumption lists with `enum_consume_lst/1' and when a
 %%       transition is fired with `fire/2'. Note that this user-defined data
