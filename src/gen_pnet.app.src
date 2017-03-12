@@ -1,0 +1,15 @@
+{application, gen_pnet,
+ [{description, "An OTP behavior for implementing Petri nets."},
+  {vsn, "0.1.0-release"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, [gen_pnet]},
+
+  {maintainers, ["Jorgen Brandt <brandjoe@hu-berlin.de>"]},
+  {licenses, []},
+  {links, []}
+ ]}.
