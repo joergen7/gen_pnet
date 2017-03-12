@@ -1,6 +1,6 @@
 {application, gen_pnet,
  [{description, "An OTP behavior for implementing Petri nets."},
-  {vsn, "0.1.0-release"},
+  {vsn, "0.1.1-snapshot"},
   {registered, []},
   {applications,
    [kernel,

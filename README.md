@@ -1,4 +1,4 @@
-# A Colored Petri Net Erlang/OTP library [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=master)](https://travis-ci.org/joergen7/gen_pnet)
+# A Colored Petri Net Erlang/OTP library [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=dev)](https://travis-ci.org/joergen7/gen_pnet)
 
 **[gen_pnet documentation](http://cuneiform-lang.org/man/gen_pnet/)**
 
