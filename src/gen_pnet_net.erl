@@ -22,31 +22,24 @@
 %%
 %% @author Jörgen Brandt <brandjoe@hu-berlin.de>
 
--module( cvm1 ).
+-module( gen_pnet_net ).
 
--behaviour( gen_pnet ).
+-callback place_lst() ->
+            [atom()].
 
--export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_map/3,
-          fire/3] ).
+-callback trsn_lst() ->
+            [atom()].
 
--export( [init_marking/0] ).
+-callback init_marking() ->
+            pass | {produce, #{ atom() => [_] }}.
 
-%%====================================================================
-%% gen_pnet callback functions
-%%====================================================================
+-callback preset( Trsn :: atom() ) ->
+            [atom()].
 
-init( _UserArg ) -> {ok, #{}, []}.
+-callback mode_lst( Trsn :: atom(), RelevantMap :: #{ atom() => [_] } ) ->
+            [#{ atom() => [_] }].
 
-init_marking() -> #{ coin_slot => [coin] }.
+-callback fire( Trsn :: atom(), ConsumeMap :: #{ atom() => [_] } ) ->
+            pass | {produce, ProduceMap :: #{ atom() => [_] }}.
 
-place_lst() -> [coin_slot, compartment].
 
-trsn_lst() -> [t].
-
-preset( t ) -> [coin_slot].
-
-enum_consume_map( t, #{ coin_slot := CLst }, _UserInfo ) ->
-  [#{ coin_slot => [C] } || C <- CLst].
-
-fire( t, _ConsumeLst, _UserInfo ) ->
-  #{ compartment => [cookie_box] }.

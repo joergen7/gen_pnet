@@ -22,31 +22,15 @@
 %%
 %% @author Jörgen Brandt <brandjoe@hu-berlin.de>
 
--module( cvm1 ).
 
--behaviour( gen_pnet ).
 
--export( [init/1, place_lst/0, trsn_lst/0, preset/1, enum_consume_map/3,
-          fire/3] ).
+-module( gen_pnet_iface ).
 
--export( [init_marking/0] ).
+-callback handle_call( Request :: _, From :: {pid(), _} ) ->
+            {pass, _} | {produce, #{ atom() => [_]}, _}.
 
-%%====================================================================
-%% gen_pnet callback functions
-%%====================================================================
+-callback handle_cast( Request :: _ ) ->
+            pass | {produce, #{ atom() => [_] }}.
 
-init( _UserArg ) -> {ok, #{}, []}.
-
-init_marking() -> #{ coin_slot => [coin] }.
-
-place_lst() -> [coin_slot, compartment].
-
-trsn_lst() -> [t].
-
-preset( t ) -> [coin_slot].
-
-enum_consume_map( t, #{ coin_slot := CLst }, _UserInfo ) ->
-  [#{ coin_slot => [C] } || C <- CLst].
-
-fire( t, _ConsumeLst, _UserInfo ) ->
-  #{ compartment => [cookie_box] }.
+-callback trigger_map() ->
+            #{ atom() => fun( ( _ ) -> ok )}.
