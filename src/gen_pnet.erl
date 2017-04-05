@@ -56,7 +56,7 @@
             pass | {produce, #{ atom() => [_]}}.
 
 %%====================================================================
-%% API functions
+%% API Functions
 %%====================================================================
 
 start_link( Mod ) ->
@@ -82,3 +82,33 @@ produce_token_lst( Pid, Place, TokenLst ) ->
 
 produce_token( Pid, Place, Token ) ->
   pnet_srv:produce_token( Pid, Place, Token ).
+
+
+
+
+%%====================================================================
+%% Internal Functions
+%%====================================================================
+
+-spec enum_mod( [atom()], #{ atom() => [_] } ) -> [#{ atom() => [_] }].
+
+enum_mod( Preset, StateMap ) ->
+
+  F = fun( P, Acc ) ->
+        N = maps:get( P, Acc, 0 ),
+        Acc#{ P => N+1 }
+      end,
+
+  % gather count map
+  CountMap = lists:foldl( F, #{}, Preset ),
+
+  G = fun( P, N, Acc ) ->
+        #{ P := TkLst } = StateMap,
+        Acc#{ P => lib_combin:cnr( N, TkLst ) }
+      end,
+
+  % enumerate drawing combinations for each preset place individually
+  CmbMap = maps:fold( G, #{}, CountMap ),
+
+  % enumerate permutations of map containing drawing combinations
+  lib_combin:permut_map( CmbMap ).
