@@ -128,6 +128,9 @@ handle_call( {call, Request}, From,
 
   end.
 
+handle_cast( {produce, ProdMap}, NetState = #net_state{} ) ->
+  % TODO
+  {noreply, NetState};
 
 handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
