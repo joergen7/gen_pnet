@@ -1,15 +1,15 @@
 {application, gen_pnet,
- [{description, "An OTP behavior for implementing Petri nets."},
-  {vsn, "0.1.1-snapshot"},
+ [{description, "A generic Petri net OTP library."},
+  {vsn, "0.1.1"},
   {registered, []},
   {applications,
    [kernel,
     stdlib
    ]},
   {env,[]},
-  {modules, [gen_pnet]},
+  {modules, [gen_pnet, gen_pnet_iface, gen_pnet_net]},
 
-  {maintainers, ["Jorgen Brandt <brandjoe@hu-berlin.de>"]},
-  {licenses, []},
+  {maintainers, ["Jorgen Brandt <joergen.brandt@onlinehome.de>"]},
+  {licenses, ["Apache 2.0"]},
   {links, []}
  ]}.

@@ -1,10 +1,8 @@
 %% -*- erlang -*-
 %%
-%% %CopyrightBegin%
+%% A generic Petri net OTP library.
 %%
-%% A generic Petri net OTP library
-%%
-%% Copyright 2016 Jörgen Brandt. All Rights Reserved.
+%% Copyright 2016 Jorgen Brandt. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -18,9 +16,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
-%% %CopyrightEnd%
-%%
-%% @author Jörgen Brandt <brandjoe@hu-berlin.de>
+%% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
 
 -module( gen_pnet_net ).
 
@@ -31,15 +27,15 @@
             [atom()].
 
 -callback init_marking() ->
-            pass | {produce, #{ atom() => [_] }}.
+            #{ atom() => [_] }.
 
--callback preset( Trsn :: atom() ) ->
+-callback preset( atom() ) ->
             [atom()].
 
--callback mode_lst( Trsn :: atom(), RelevantMap :: #{ atom() => [_] } ) ->
-            [#{ atom() => [_] }].
+-callback is_enabled( atom(), #{ atom() => [_]} ) ->
+            boolean().
 
--callback fire( Trsn :: atom(), ConsumeMap :: #{ atom() => [_] } ) ->
-            pass | {produce, ProduceMap :: #{ atom() => [_] }}.
+-callback fire( atom(), #{ atom() => [_] } ) ->
+            pass | {produce, #{ atom() => [_] }}.
 
 
