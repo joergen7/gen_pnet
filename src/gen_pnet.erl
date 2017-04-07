@@ -175,7 +175,7 @@ terminate( _Reason, _State ) ->
 %%====================================================================
 
 -spec pick_mod( #{ atom() => [_] }, atom() ) ->
-        {ok, #{ atom() => [_] }} | {error, terminated}.
+        pass | {produce, #{ atom() => [_] }}.
 
 pick_mod( Marking, NetMod ) ->
 
@@ -200,7 +200,7 @@ pick_mod( Marking, NetMod ) ->
 
     % pick an enabled transition or terminate if no transition is enabled
     Trsn = case maps:keys( ModMap ) of
-             []     -> throw( terminated );
+             []     -> throw( pass );
              KeyLst -> lib_combin:pick( KeyLst )
            end,
 
@@ -213,7 +213,7 @@ pick_mod( Marking, NetMod ) ->
     {ok, Mod}
 
   catch
-    throw:terminated -> {error, terminated}
+    throw:pass -> pass
   end.
 
 
