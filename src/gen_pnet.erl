@@ -143,9 +143,7 @@ handle_cast( {produce, ProdMap}, NetState = #net_state{ marking = Marking } ) ->
       produce( self(), Pm ),
       {noreply, NetState#net_state{ marking = Marking2 }}
 
-  end.
-
-
+  end;
 
 handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
@@ -174,12 +172,12 @@ init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
         Acc#{ P => ArgTkLst }
       end,
 
-  Marking = lists:fold( F, #{}, PlaceLst ),
+  Marking = lists:foldl( F, #{}, PlaceLst ),
 
   PlaceLst = NetMod:place_lst(),
   Marking1 = maps:with( PlaceLst, Marking ),
 
-  produce( self(), NetMod:init_marking() )
+  produce( self(), NetMod:init_marking() ),
 
   {ok, NetState#net_state{ marking = Marking1 }}.
 
@@ -192,7 +190,7 @@ terminate( _Reason, _State ) ->
 %% Internal functions
 %%====================================================================
 
--spec cns( #{ atom() => [_] }, #{ atom() => [_] } ) -> #{ atom() => [_] }.
+-spec cns( map(), #{ atom() => [_] } ) -> _.
 
 cns( Marking, Mode ) ->
 
@@ -203,7 +201,7 @@ cns( Marking, Mode ) ->
 
   maps:fold( F, #{}, Marking ).
 
--spec prd( #{ atom() => [_] }, #{ atom() => [_] } ) -> #{ atom() => [_] }.
+-spec prd( map(), _ ) -> _.
 
 prd( Marking, ProdMap ) ->
 
@@ -234,37 +232,39 @@ progress( #net_state{ marking = Marking, net_mod = NetMod } ) ->
       end,
 
   % derive a map listing all enabled modes for each transition
-  ModeMap = lists:fold( F, #{}, TrsnLst ),
+  ModeMap = lists:foldl( F, #{}, TrsnLst ),
 
   % delegate enabled mode map to attempt_progress function
   attempt_progress( ModeMap, NetMod ).
 
 
--spec attempt_progress( #{ atom() => [#{ atom() => [_] }] }, atom() ) ->
-        pass | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
-
-attempt_progress( ModeMap, NetMod ) when maps:size( ModeMap ) =:= 0 ->
-  pass;
+-spec attempt_progress( map(), atom() ) -> pass | {delta, _, _}.
 
 attempt_progress( ModeMap, NetMod ) ->
 
-  TrsnLst = maps:keys( ModeMap ),
-  Trsn = lib_combin:pick_from( TrsnLst ),
-  #{ Trsn := ModeLst } = ModeMap,
-  Mode = lib_combin:pick_from( ModeLst ),
+  case maps:size( ModeMap ) of
 
-  case NetMod:fire( Trsn, Mode ) of
+    0 -> pass;
+    _ ->
 
-    {produce, ProdMap} ->
-      {delta, Mode, ProdMap};
-    
-    pass ->
-      attempt_progress( ModeMap#{ Trsn := ModeLst--Mode }, NetMod )
+      TrsnLst = maps:keys( ModeMap ),
+      Trsn = lib_combin:pick_from( TrsnLst ),
+      #{ Trsn := ModeLst } = ModeMap,
+      Mode = lib_combin:pick_from( ModeLst ),
 
+      case NetMod:fire( Trsn, Mode ) of
+
+        {produce, ProdMap} ->
+          {delta, Mode, ProdMap};
+        
+        pass ->
+          attempt_progress( ModeMap#{ Trsn := ModeLst--Mode }, NetMod )
+
+      end
   end.
 
 
--spec enum_mode( [atom()], #{ atom() => [_] } ) -> [#{ atom() => [_] }].
+-spec enum_mode( [_], _ ) -> _.
 
 enum_mode( Preset, Marking ) ->
 
