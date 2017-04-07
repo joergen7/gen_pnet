@@ -84,6 +84,9 @@ ls( Pid, Place ) ->
 marking( Pid ) ->
   gen_server:call( Pid, marking ).
 
+stats( Pid ) ->
+  gen_server:call( Pid, stats ).
+
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
 
@@ -131,9 +134,14 @@ handle_call( {call, Request}, From,
       produce( self(), ProdMap ),
       {reply, Reply, NetState}
 
-  end.
+  end;
 
-handle_cast( {produce, ProdMap}, NetState ) ->
+handle_call( stats, _From, NetState = #net_state{} ) ->
+
+handle_cast( {produce, ProdMap},
+             NetState = #net_state{ stats = Stats,
+                                    tstart  = T1,
+                                    cnt     = Cnt } ) ->
   
   NetState1 = prd( NetState, ProdMap ),
   NetState2 = handle_trigger( NetState1 ),
@@ -144,9 +152,47 @@ handle_cast( {produce, ProdMap}, NetState ) ->
       {noreply, NetState2};
 
     {delta, Mode, Pm} ->
+
       NetState3 = cns( NetState2, Mode ),
       produce( self(), Pm ),
-      {noreply, NetState3}
+
+      NetState4 = if
+                    C < 1000 -> NetState3#net_state{ cnt = Cnt+1 };
+                    true     ->
+
+                      T2 = os:system_time(),
+                      Tmean = round( ( T1+T2 )/2 ),
+                      Tdelta = T2-T1,
+                      CurrentFps = 1000000/Tdelta,
+
+                      Current = #stat{ t = Tmean, fps = CurrentFps },
+
+                      {Hi1, Lo1} = case Stats of
+                                     undefined -> {Current, Current};
+                                     #stats{ hi = H, lo = L } -> {H, L}
+                                   end,
+
+                      #stat{ fps = HiFps } = Hi1,
+                      #stat{ fps = LoFps } = Lo1,
+
+                      Hi2 = if
+                              CurrentFps > HiFps -> CurrentStat;
+                              true               -> Hi1
+                            end,
+
+                      Lo2 = if
+                              CurrentFps < LoFps -> CurrentStat;
+                              true               -> Lo1
+                            end,
+
+                      NetState3#net_state{ stats  = #stats{ current = Current,
+                                                            hi      = Hi2,
+                                                            lo      = Lo2 },
+                                           tstart = T2,
+                                           cnt    = 0 }
+                  end,
+
+      {noreply, NetState4}
 
   end;
 
@@ -181,7 +227,10 @@ init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
 
   produce( self(), NetMod:init_marking() ),
 
-  {ok, NetState#net_state{ marking = Marking }}.
+  {ok, NetState#net_state{ marking = Marking,
+                           stats   = undefined,
+                           tstart  = os:system_time(),
+                           cnt     = 0 }}.
 
 
 terminate( _Reason, _State ) ->

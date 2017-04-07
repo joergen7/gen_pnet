@@ -9,7 +9,10 @@
   {env,[]},
   {modules, [gen_pnet, gen_pnet_iface, gen_pnet_net]},
 
-  {maintainers, ["Jorgen Brandt <joergen.brandt@onlinehome.de>"]},
+  {maintainers, ["Jorgen Brandt"]},
   {licenses, ["Apache 2.0"]},
-  {links, []}
+  {links, [
+           {"GitHub", "https://github.com/joergen7/gen_pnet"},
+           {"Docs", "http://cuneiform-lang.org/man/gen_pnet/index.html"}
+          ]}
  ]}.
