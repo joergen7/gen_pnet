@@ -22,8 +22,8 @@
 
 -behaviour( gen_server ).
 
--export( [start_link/1, start_link/2, ls/2, call/2, cast/2, produce/2,
-          produce_token_lst/3, produce_token/3] ).
+-export( [start_link/1, start_link/2, ls/2, marking/1, call/2, cast/2,
+          produce/2, produce_token_lst/3, produce_token/3] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
@@ -81,6 +81,9 @@ start_link( ServerName, NetState = #net_state{} ) ->
 ls( Pid, Place ) ->
   gen_server:call( Pid, {ls, Place} ).
 
+marking( Pid ) ->
+  gen_server:call( Pid, marking ).
+
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
 
@@ -104,8 +107,7 @@ produce_token( Pid, Place, Token ) ->
 code_change( _OldVsn, State, _Extra ) -> {ok, State}.
 
 
-handle_call( {ls, Place}, _From,
-             NetState = #net_state{ marking = Marking } ) ->
+handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
 
   Reply = case maps:is_key( Place, Marking ) of
             true  -> {ok, maps:get( Place, Marking )};
@@ -113,6 +115,9 @@ handle_call( {ls, Place}, _From,
           end,
 
   {reply, Reply, NetState};
+
+handle_call( marking, _From, NetState = #net_state{ marking = Marking } ) ->
+  {reply, {ok, Marking}, NetState};
 
 handle_call( {call, Request}, From,
              NetState = #net_state{ iface_mod = IfaceMod } ) ->
@@ -128,20 +133,20 @@ handle_call( {call, Request}, From,
 
   end.
 
-handle_cast( {produce, ProdMap}, NetState = #net_state{ marking = Marking } ) ->
+handle_cast( {produce, ProdMap}, NetState ) ->
   
-  Marking1 = prd( Marking, ProdMap ),
-  NetState1 = NetState#net_state{ marking = Marking1 },
+  NetState1 = prd( NetState, ProdMap ),
+  NetState2 = handle_trigger( NetState1 ),
 
-  case progress( NetState1 ) of
+  case progress( NetState2 ) of
 
     pass ->
-      {noreply, NetState1};
+      {noreply, NetState2};
 
     {delta, Mode, Pm} ->
-      Marking2 = cns( Marking1, Mode ),
+      NetState3 = cns( NetState2, Mode ),
       produce( self(), Pm ),
-      {noreply, NetState#net_state{ marking = Marking2 }}
+      {noreply, NetState3}
 
   end;
 
@@ -174,12 +179,9 @@ init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
 
   Marking = lists:foldl( F, #{}, PlaceLst ),
 
-  PlaceLst = NetMod:place_lst(),
-  Marking1 = maps:with( PlaceLst, Marking ),
-
   produce( self(), NetMod:init_marking() ),
 
-  {ok, NetState#net_state{ marking = Marking1 }}.
+  {ok, NetState#net_state{ marking = Marking }}.
 
 
 terminate( _Reason, _State ) ->
@@ -190,27 +192,48 @@ terminate( _Reason, _State ) ->
 %% Internal functions
 %%====================================================================
 
--spec cns( map(), #{ atom() => [_] } ) -> _.
+-spec handle_trigger( #net_state{} ) -> #net_state{}.
 
-cns( Marking, Mode ) ->
+handle_trigger( NetState = #net_state{ marking   = Marking,
+                                       iface_mod = IfaceMod } ) ->
+
+  TriggerMap = IfaceMod:trigger_map(),
+
+  F = fun( P, TkLst, Acc ) ->
+        case maps:is_key( P, TriggerMap ) of
+          false -> Acc#{ P => TkLst };
+          true  ->
+            lists:foreach( maps:get( P, TriggerMap ), TkLst ),
+            Acc#{ P => [] }
+        end
+      end,
+
+  Marking1 = maps:fold( F, #{}, Marking ),
+
+  NetState#net_state{ marking = Marking1 }.
+
+
+-spec cns( #net_state{}, #{ atom() => [_] } ) -> _.
+
+cns( NetState = #net_state{ marking = Marking }, Mode ) ->
 
   F = fun( T, TkLst, Acc ) ->
         #{ T := TkLst } = Marking,
         Acc#{ T => TkLst--maps:get( T, Mode, [] ) }
       end,
 
-  maps:fold( F, #{}, Marking ).
+  NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
--spec prd( map(), _ ) -> _.
+-spec prd( #net_state{}, _ ) -> _.
 
-prd( Marking, ProdMap ) ->
+prd( NetState = #net_state{ marking = Marking }, ProdMap ) ->
 
   F = fun( T, TkLst, Acc ) ->
         #{ T := TkLst } = Marking,
         Acc#{ T => TkLst++maps:get( T, ProdMap, [] ) }
       end,
 
-  maps:fold( F, #{}, Marking ).
+  NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
 -spec progress( #net_state{} ) ->
         pass | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
