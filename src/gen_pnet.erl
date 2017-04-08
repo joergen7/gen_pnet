@@ -138,10 +138,12 @@ handle_call( {call, Request}, From,
 
 handle_call( stats, _From, NetState = #net_state{} ) ->
 
+  % TODO
+
 handle_cast( {produce, ProdMap},
-             NetState = #net_state{ stats = Stats,
-                                    tstart  = T1,
-                                    cnt     = Cnt } ) ->
+             NetState = #net_state{ stats  = Stats,
+                                    tstart = T1,
+                                    cnt    = Cnt } ) ->
   
   NetState1 = prd( NetState, ProdMap ),
   NetState2 = handle_trigger( NetState1 ),
