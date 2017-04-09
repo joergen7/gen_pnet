@@ -164,7 +164,7 @@ handle_cast( {produce, ProdMap},
                       T2 = os:system_time(),
                       Tmean = round( ( T1+T2 )/2 ),
                       Tdelta = T2-T1,
-                      CurrentFps = 1000000/Tdelta,
+                      CurrentFps = 1000000000000/Tdelta,
 
                       Current = #stat{ t = Tmean, fps = CurrentFps },
 
