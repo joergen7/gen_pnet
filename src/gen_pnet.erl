@@ -120,7 +120,7 @@ handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
   {reply, Reply, NetState};
 
 handle_call( marking, _From, NetState = #net_state{ marking = Marking } ) ->
-  {reply, {ok, Marking}, NetState};
+  {reply, Marking, NetState};
 
 handle_call( {call, Request}, From,
              NetState = #net_state{ iface_mod = IfaceMod } ) ->
@@ -136,9 +136,8 @@ handle_call( {call, Request}, From,
 
   end;
 
-handle_call( stats, _From, NetState = #net_state{} ) ->
-
-  % TODO
+handle_call( stats, _From, NetState = #net_state{ stats = Stats } ) ->
+  {reply, Stats, NetState};
 
 handle_cast( {produce, ProdMap},
              NetState = #net_state{ stats  = Stats,
