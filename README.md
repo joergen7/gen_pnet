@@ -1,4 +1,4 @@
-# gen_pnet [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=dev)](https://travis-ci.org/joergen7/gen_pnet)
+# gen_pnet [![hex.pm](https://img.shields.io/hexpm/v/gen_pnet.svg?style=flat-square)](https://hex.pm/packages/gen_pnet) [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=dev)](https://travis-ci.org/joergen7/gen_pnet)
 
 A generic Petri net OTP library.
 
