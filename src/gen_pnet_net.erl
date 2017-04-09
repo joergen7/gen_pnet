@@ -29,13 +29,11 @@
 -callback init_marking() ->
             #{ atom() => [_] }.
 
--callback preset( atom() ) ->
+-callback preset( Place :: atom() ) ->
             [atom()].
 
--callback is_enabled( atom(), #{ atom() => [_]} ) ->
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) ->
             boolean().
 
--callback fire( atom(), #{ atom() => [_] } ) ->
+-callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
             pass | {produce, #{ atom() => [_] }}.
-
-

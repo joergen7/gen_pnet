@@ -22,8 +22,9 @@
 
 -behaviour( gen_server ).
 
--export( [start_link/1, start_link/2, ls/2, marking/1, call/2, cast/2,
-          produce/2, produce_token_lst/3, produce_token/3, stats/1] ).
+-export( [new/3, start_link/1, start_link/2, ls/2, marking/1, call/2, cast/2,
+          produce/2, produce_token_lst/3, produce_token/3, get_stats/1,
+          reset_stats/1] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
@@ -52,39 +53,86 @@
 -callback init_marking() ->
             #{ atom() => [_] }.
 
--callback preset( atom() ) ->
+-callback preset( Place :: atom() ) ->
             [atom()].
 
--callback is_enabled( atom(), #{ atom() => [_]} ) ->
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) ->
             boolean().
 
--callback fire( atom(), #{ atom() => [_] } ) ->
+-callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
             pass | {produce, #{ atom() => [_] }}.
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
+%% @doc Generates an initial instance of a state record.
+%%
+%%      Such a state record can be used to initialize a `gen_pnet' instance with
+%%      `start_link/1' or `start_link/2'.
+%%
+%% @see start_link/1
+%% @see start_link/2
+new( InitMarking, NetMod, IfaceMod ) ->
+  #net_state{ marking = InitMarking, net_mod = NetMod, iface_mod = IfaceMod }.
+
+%% @doc Starts an unregistered net instance.
+%%
+%%      The `gen_pnet' instance can be initialized with either the callback
+%%      module name `Mod', implementing all callback functions or with a
+%%      `#net_state{}' record instance. Such a `#net_state{}' record can be
+%%      generated using the `new/3' function.
+%%
+%% @see new/3
 start_link( Mod ) when is_atom( Mod ) ->
   start_link( #net_state{ iface_mod = Mod, net_mod = Mod } );
 
 start_link( NetState = #net_state{} ) ->
   gen_server:start_link( ?MODULE, NetState, [] ).
 
+%% @doc Starts a net instance registered to `ServerName' using the callback
+%%      module `Mod' or a `#net_state' record instance which can be created
+%%      using `new/3'. Herein, the `ServerName' argument can be
+%%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. This
+%%      `ServerName' argument is handed down to `gen_server:start_link/4' as is.
+%%
+%% @see new/3
 start_link( ServerName, Mod ) when is_atom( Mod ) ->
   start_link( ServerName, #net_state{ iface_mod = Mod, net_mod = Mod } );
 
 start_link( ServerName, NetState = #net_state{} ) ->
   gen_server:start_link( ServerName, ?MODULE, NetState, [] ).
 
+%% @doc Requests the net instance under process id `Pid' to list all
+%%      tokens on the place named `Place'.
+%%
+%%      Herein, `Pid' can also be a registered process name. The return value is
+%%      either `{ok, [_]}'' if the place exists or a `{error, #bad_place{}}'
+%%      tuple.
 ls( Pid, Place ) ->
   gen_server:call( Pid, {ls, Place} ).
 
+%% @doc Requests the net instance under process id `Pid' to return a
+%%      marking map, associating to each place name the list of tokens that this
+%%      place holds.
+%%
+%%      Herein, `Pid' can also be a registered process name. The return value is
+%%      just the plain map.
 marking( Pid ) ->
   gen_server:call( Pid, marking ).
 
-stats( Pid ) ->
-  gen_server:call( Pid, stats ).
+%% @doc Requests the net instance under process id `Pid' to return the
+%%      throughput of the net.
+%%
+%%      The throughput is given as a `#stats{}' record consisting of three
+%%      `#stat{}' record instances characterizing the current, maximum, and
+%%      minimum throughput of this net in transition firings per second.
+get_stats( Pid ) ->
+  gen_server:call( Pid, get_stats ).
+
+%% @doc Requests the net instance under process id `Pid' to clear its stats.
+reset_stats( Pid ) ->
+  gen_server:call( Pid, reset_stats ).
 
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
@@ -135,8 +183,12 @@ handle_call( {call, Request}, From,
 
   end;
 
-handle_call( stats, _From, NetState = #net_state{ stats = Stats } ) ->
-  {reply, Stats, NetState}.
+handle_call( get_stats, _From, NetState = #net_state{ stats = Stats } ) ->
+  {reply, Stats, NetState};
+
+handle_call( reset_stats, _From, NetState ) ->
+  {reply, ok, NetState#net_state{ stats = undefined }}.
+
 
 handle_cast( {produce, ProdMap},
              NetState = #net_state{ stats  = Stats,
