@@ -41,8 +41,7 @@
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }}.
 
--callback trigger_map() ->
-            #{ atom() => fun( ( _ ) -> ok )}.
+-callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
 
 -callback place_lst() ->
             [atom()].
@@ -144,22 +143,21 @@ handle_cast( {produce, ProdMap},
                                     tstart = T1,
                                     cnt    = Cnt } ) ->
   
-  NetState1 = prd( NetState, ProdMap ),
-  NetState2 = handle_trigger( NetState1 ),
+  NetState1 = handle_trigger( ProdMap, NetState ),
 
-  case progress( NetState2 ) of
+  case progress( NetState1 ) of
 
     pass ->
-      {noreply, NetState2};
+      {noreply, NetState1};
 
     {delta, Mode, Pm} ->
 
-      NetState3 = cns( NetState2, Mode ),
+      NetState2 = cns( Mode, NetState1 ),
       produce( self(), Pm ),
 
-      NetState4 = if
-                    Cnt < 1000 -> NetState3#net_state{ cnt = Cnt+1 };
-                    true     ->
+      NetState3 = if
+                    Cnt < 1000 -> NetState2#net_state{ cnt = Cnt+1 };
+                    true       ->
 
                       T2 = os:system_time(),
                       Tmean = round( ( T1+T2 )/2 ),
@@ -186,14 +184,14 @@ handle_cast( {produce, ProdMap},
                               true               -> Lo1
                             end,
 
-                      NetState3#net_state{ stats  = #stats{ current = Current,
+                      NetState2#net_state{ stats  = #stats{ current = Current,
                                                             hi      = Hi2,
                                                             lo      = Lo2 },
                                            tstart = T2,
                                            cnt    = 0 }
                   end,
 
-      {noreply, NetState4}
+      {noreply, NetState3}
 
   end;
 
@@ -242,30 +240,31 @@ terminate( _Reason, _State ) ->
 %% Internal functions
 %%====================================================================
 
--spec handle_trigger( #net_state{} ) -> #net_state{}.
+handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
-handle_trigger( NetState = #net_state{ marking   = Marking,
-                                       iface_mod = IfaceMod } ) ->
+  G = fun( P, TkLst, Acc ) ->
 
-  TriggerMap = IfaceMod:trigger_map(),
+        F = fun( Tk, A ) ->
+              case IfaceMod:trigger( P, Tk ) of
+                pass    -> [Tk|A];
+                consume -> A
+              end
+            end,
 
-  F = fun( P, TkLst, Acc ) ->
-        case maps:is_key( P, TriggerMap ) of
-          false -> Acc#{ P => TkLst };
-          true  ->
-            lists:foreach( maps:get( P, TriggerMap ), TkLst ),
-            Acc#{ P => [] }
-        end
+        TkLst1 = lists:foldl( F, [], TkLst ),
+        Acc#{ P => TkLst1 }
+
       end,
 
-  Marking1 = maps:fold( F, #{}, Marking ),
+  ProdMap1 = maps:fold( G, #{}, ProdMap ),
+  prd( ProdMap1, NetState ).
 
-  NetState#net_state{ marking = Marking1 }.
 
 
--spec cns( #net_state{}, #{ atom() => [_] } ) -> _.
 
-cns( NetState = #net_state{ marking = Marking }, Mode ) ->
+-spec cns( #{ atom() => [_] }, #net_state{} ) -> _.
+
+cns( Mode, NetState = #net_state{ marking = Marking } ) ->
 
   F = fun( T, TkLst, Acc ) ->
         #{ T := TkLst } = Marking,
@@ -274,9 +273,9 @@ cns( NetState = #net_state{ marking = Marking }, Mode ) ->
 
   NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
--spec prd( #net_state{}, _ ) -> _.
+-spec prd( _, #net_state{} ) -> _.
 
-prd( NetState = #net_state{ marking = Marking }, ProdMap ) ->
+prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
 
   F = fun( T, TkLst, Acc ) ->
         #{ T := TkLst } = Marking,

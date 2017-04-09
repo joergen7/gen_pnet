@@ -31,5 +31,4 @@
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }}.
 
--callback trigger_map() ->
-            #{ atom() => fun( ( _ ) -> ok )}.
+-callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
