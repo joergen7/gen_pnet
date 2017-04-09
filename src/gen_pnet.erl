@@ -23,7 +23,7 @@
 -behaviour( gen_server ).
 
 -export( [start_link/1, start_link/2, ls/2, marking/1, call/2, cast/2,
-          produce/2, produce_token_lst/3, produce_token/3] ).
+          produce/2, produce_token_lst/3, produce_token/3, stats/1] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
@@ -137,7 +137,7 @@ handle_call( {call, Request}, From,
   end;
 
 handle_call( stats, _From, NetState = #net_state{ stats = Stats } ) ->
-  {reply, Stats, NetState};
+  {reply, Stats, NetState}.
 
 handle_cast( {produce, ProdMap},
              NetState = #net_state{ stats  = Stats,
@@ -158,7 +158,7 @@ handle_cast( {produce, ProdMap},
       produce( self(), Pm ),
 
       NetState4 = if
-                    C < 1000 -> NetState3#net_state{ cnt = Cnt+1 };
+                    Cnt < 1000 -> NetState3#net_state{ cnt = Cnt+1 };
                     true     ->
 
                       T2 = os:system_time(),
@@ -177,12 +177,12 @@ handle_cast( {produce, ProdMap},
                       #stat{ fps = LoFps } = Lo1,
 
                       Hi2 = if
-                              CurrentFps > HiFps -> CurrentStat;
+                              CurrentFps > HiFps -> Current;
                               true               -> Hi1
                             end,
 
                       Lo2 = if
-                              CurrentFps < LoFps -> CurrentStat;
+                              CurrentFps < LoFps -> Current;
                               true               -> Lo1
                             end,
 
