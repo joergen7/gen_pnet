@@ -22,9 +22,9 @@
 
 -behaviour( gen_server ).
 
--export( [new/3, start_link/1, start_link/2, ls/2, marking/1, call/2, cast/2,
+-export( [new/3, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
           produce/2, produce_token_lst/3, produce_token/3, get_stats/1,
-          reset_stats/1] ).
+          reset_stats/1, stop/1] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
@@ -35,6 +35,9 @@
 %% Callback definitions
 %%====================================================================
 
+-callback code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
+            {ok, #net_state{}} | {error, _}.
+
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
             {reply, _} | {reply, _, #{ atom() => [_] }}.
@@ -42,22 +45,22 @@
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }}.
 
+-callback handle_info( Info :: _, NetState :: #net_state{} ) ->
+            noreply | {noreply, #{ atom() => [_] }}.
+
+-callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+
 -callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
 
--callback place_lst() ->
-            [atom()].
+-callback place_lst() -> [atom()].
 
--callback trsn_lst() ->
-            [atom()].
+-callback trsn_lst() -> [atom()].
 
--callback init_marking() ->
-            #{ atom() => [_] }.
+-callback init_marking() -> #{ atom() => [_] }.
 
--callback preset( Place :: atom() ) ->
-            [atom()].
+-callback preset( Place :: atom() ) -> [atom()].
 
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) ->
-            boolean().
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
             pass | {produce, #{ atom() => [_] }}.
@@ -84,11 +87,11 @@ new( InitMarking, NetMod, IfaceMod ) ->
 %%      generated using the `new/3' function.
 %%
 %% @see new/3
-start_link( Mod ) when is_atom( Mod ) ->
-  start_link( #net_state{ iface_mod = Mod, net_mod = Mod } );
+start_link( Mod, Options ) when is_atom( Mod ) ->
+  start_link( #net_state{ iface_mod = Mod, net_mod = Mod }, Options );
 
-start_link( NetState = #net_state{} ) ->
-  gen_server:start_link( ?MODULE, NetState, [] ).
+start_link( NetState = #net_state{}, Options ) ->
+  gen_server:start_link( ?MODULE, NetState, Options ).
 
 %% @doc Starts a net instance registered to `ServerName' using the callback
 %%      module `Mod' or a `#net_state' record instance which can be created
@@ -97,11 +100,12 @@ start_link( NetState = #net_state{} ) ->
 %%      `ServerName' argument is handed down to `gen_server:start_link/4' as is.
 %%
 %% @see new/3
-start_link( ServerName, Mod ) when is_atom( Mod ) ->
-  start_link( ServerName, #net_state{ iface_mod = Mod, net_mod = Mod } );
+start_link( ServerName, Mod, Options ) when is_atom( Mod ) ->
+  NetState = #net_state{ iface_mod = Mod, net_mod = Mod },
+  start_link( ServerName, NetState, Options );
 
-start_link( ServerName, NetState = #net_state{} ) ->
-  gen_server:start_link( ServerName, ?MODULE, NetState, [] ).
+start_link( ServerName, NetState = #net_state{}, Options ) ->
+  gen_server:start_link( ServerName, ?MODULE, NetState, Options ).
 
 %% @doc Requests the net instance under process id `Pid' to list all
 %%      tokens on the place named `Place'.
@@ -134,6 +138,9 @@ get_stats( Pid ) ->
 reset_stats( Pid ) ->
   gen_server:call( Pid, reset_stats ).
 
+stop( Pid ) ->
+  gen_server:stop( Pid ).
+
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
 
@@ -154,7 +161,8 @@ produce_token( Pid, Place, Token ) ->
 %% Generic server callback functions
 %%====================================================================
 
-code_change( _OldVsn, State, _Extra ) -> {ok, State}.
+code_change( OldVsn, NetState = #net_state{ iface_mod = IfaceMod }, Extra ) ->
+  IfaceMod:code_change( OldVsn, NetState, Extra ).
 
 
 handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
@@ -261,8 +269,17 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   end.
 
 
-handle_info( _Info, State ) ->
-  {noreply, State}.
+handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
+
+  case IfaceMod:handle_info( Info, NetState ) of
+
+    noreply ->
+      {noreply, NetState};
+
+    {noreply, ProdMap} ->
+      produce( self(), ProdMap )
+
+  end.
 
 
 init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
@@ -284,8 +301,9 @@ init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
                            cnt     = 0 }}.
 
 
-terminate( _Reason, _State ) ->
-  ok.
+terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
+  IfaceMod:terminate( Reason, NetState ).
+  
 
 
 %%====================================================================

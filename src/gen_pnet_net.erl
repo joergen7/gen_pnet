@@ -20,20 +20,15 @@
 
 -module( gen_pnet_net ).
 
--callback place_lst() ->
-            [atom()].
+-callback place_lst() -> [atom()].
 
--callback trsn_lst() ->
-            [atom()].
+-callback trsn_lst() -> [atom()].
 
--callback init_marking() ->
-            #{ atom() => [_] }.
+-callback init_marking() -> #{ atom() => [_] }.
 
--callback preset( Place :: atom() ) ->
-            [atom()].
+-callback preset( Place :: atom() ) -> [atom()].
 
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) ->
-            boolean().
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
             pass | {produce, #{ atom() => [_] }}.

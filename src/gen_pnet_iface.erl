@@ -24,6 +24,9 @@
 
 -include( "gen_pnet.hrl" ).
 
+-callback code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
+            {ok, #net_state{}} | {error, _}.
+
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
             {reply, _} | {reply, _, #{ atom() => [_] }}.
@@ -31,4 +34,10 @@
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }}.
 
+-callback handle_info( Info :: _, NetState :: #net_state{} ) ->
+            noreply | {noreply, #{ atom() => [_] }}.
+
+-callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+
 -callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
+
