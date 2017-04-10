@@ -84,7 +84,8 @@ new( InitMarking, NetMod, IfaceMod ) ->
 %%      The `gen_pnet' instance can be initialized with either the callback
 %%      module name `Mod', implementing all callback functions or with a
 %%      `#net_state{}' record instance. Such a `#net_state{}' record can be
-%%      generated using the `new/3' function.
+%%      generated using the `new/3' function. The option list `Options' is
+%%      handed down to `gen_server:start_link/3' as is.
 %%
 %% @see new/3
 start_link( Mod, Options ) when is_atom( Mod ) ->
@@ -96,8 +97,9 @@ start_link( NetState = #net_state{}, Options ) ->
 %% @doc Starts a net instance registered to `ServerName' using the callback
 %%      module `Mod' or a `#net_state' record instance which can be created
 %%      using `new/3'. Herein, the `ServerName' argument can be
-%%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. This
-%%      `ServerName' argument is handed down to `gen_server:start_link/4' as is.
+%%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. The server
+%%      name `ServerName' and option list `Options' are handed down to
+%%      `gen_server:start_link/4' as is.
 %%
 %% @see new/3
 start_link( ServerName, Mod, Options ) when is_atom( Mod ) ->
