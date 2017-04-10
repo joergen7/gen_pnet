@@ -10,7 +10,7 @@ While many simulation libraries only mimic the concurrent behavior of Petri nets
 
 # Related Projects
 
-- [gen_pn](https://github.com/aabs/gen_pn)
+- [aabs/gen_pn](https://github.com/aabs/gen_pn) An alternative Erlang/OTP compatible petri net library
 
 # License
 
