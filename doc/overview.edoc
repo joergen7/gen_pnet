@@ -1,10 +1,7 @@
-@author Jörgen Brandt <brandjoe@hu-berlin.de>
-@copyright 2016 Jörgen Brandt
-@version 0.1.0
-@title A generic Petri net OTP library
-@see gen_pnet
-@see cvm2
-@reference <a href="https://github.com/joergen7/gen_pnet">Source code</a> hosted at GitHub.
+@author Jorgen Brandt <joergen.brandt@onlinehome.de>
+@copyright 2016 Jorgen Brandt
+@version 0.1.1
+@title A generic Petri net OTP library.
 @doc
 
 Some applications exhibit behavioral patterns that lend themselves to Petri nets. The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and what other operations might run in parallel.

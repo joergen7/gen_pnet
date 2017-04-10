@@ -74,8 +74,8 @@
 %%      Such a state record can be used to initialize a `gen_pnet' instance with
 %%      `start_link/1' or `start_link/2'.
 %%
-%% @see start_link/1
 %% @see start_link/2
+%% @see start_link/3
 new( InitMarking, NetMod, IfaceMod ) ->
   #net_state{ marking = InitMarking, net_mod = NetMod, iface_mod = IfaceMod }.
 
@@ -161,12 +161,21 @@ call( Pid, Request ) ->
 cast( Pid, Request ) ->
   gen_server:cast( Pid, {cast, Request} ).
 
+%% @doc Produce the tokens on the places as described in the `ProdMap' argument
+%%      atomically in the net instance under process id `Pid'.
+%%
+%%      Note that production succeeds even if a non-existing process is
+%%      addressed or the net instance is down.
 produce( Pid, ProdMap ) ->
   gen_server:cast( Pid, {produce, ProdMap} ).
 
+%% @doc Produce the tokens in `TokenLst' all on place `Place' atomically in the
+%%      net instance under process id `Pid'.
 produce_token_lst( Pid, Place, TokenLst ) ->
   produce( Pid, #{ Place => TokenLst } ).
 
+%% @doc Produce the single token `Token' on place `Place' in the net instance
+%%      under process id `Pid'.
 produce_token( Pid, Place, Token ) ->
   produce( Pid, #{ Place => [Token] } ).
 
@@ -175,10 +184,12 @@ produce_token( Pid, Place, Token ) ->
 %% Generic server callback functions
 %%====================================================================
 
+%% @private
 code_change( OldVsn, NetState = #net_state{ iface_mod = IfaceMod }, Extra ) ->
   IfaceMod:code_change( OldVsn, NetState, Extra ).
 
 
+%% @private
 handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
 
   Reply = case maps:is_key( Place, Marking ) of
@@ -212,6 +223,7 @@ handle_call( reset_stats, _From, NetState ) ->
   {reply, ok, NetState#net_state{ stats = undefined }}.
 
 
+%% @private
 handle_cast( {produce, ProdMap},
              NetState = #net_state{ stats  = Stats,
                                     tstart = T1,
@@ -283,6 +295,7 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   end.
 
 
+%% @private
 handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
   case IfaceMod:handle_info( Info, NetState ) of
@@ -296,6 +309,7 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   end.
 
 
+%% @private
 init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
 
   PlaceLst = NetMod:place_lst(),
@@ -315,6 +329,7 @@ init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
                            cnt     = 0 }}.
 
 
+%% @private
 terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   IfaceMod:terminate( Reason, NetState ).
   
