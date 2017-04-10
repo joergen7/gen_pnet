@@ -140,12 +140,24 @@ get_stats( Pid ) ->
 reset_stats( Pid ) ->
   gen_server:call( Pid, reset_stats ).
 
+%% @doc Signal the net instance under process id `Pid' to stop.
 stop( Pid ) ->
   gen_server:stop( Pid ).
 
+%% @doc Send the request term `Request' to the net instance under process id
+%%      `Pid' and return the reply.
+%%
+%%      The request is handled by the `handle_call/3' callback function of the
+%%      interface module.
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
 
+%% @doc Send the request term `Request' asynchronously to the net instance under
+%%      process id `Pid'.
+%%
+%%      The request is handled by the `handle_cast/2' callback function of the
+%%      interface module. Note that the cast succeeds even if a non-existing
+%%      process is addressed or the net instance is down.
 cast( Pid, Request ) ->
   gen_server:cast( Pid, {cast, Request} ).
 
