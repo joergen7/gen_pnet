@@ -35,6 +35,8 @@
 %% Callback definitions
 %%====================================================================
 
+%% Interface callbacks
+
 -callback code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
             {ok, #net_state{}} | {error, _}.
 
@@ -51,6 +53,9 @@
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
 -callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
+
+
+%% Net callbacks
 
 -callback place_lst() -> [atom()].
 

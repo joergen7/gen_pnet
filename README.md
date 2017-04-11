@@ -8,9 +8,9 @@ This OTP library is a framework for programming with Petri nets. It implements a
 
 While many simulation libraries only mimic the concurrent behavior of Petri nets, the `gen_pnet' library allows the definition of nets with an arbitrary number of transitions competing for a place's tokens neither imposing order in the form of an orverarching loop nor otherwise constraining parallelism.
 
-# Related Projects
+# Resources
 
-- [aabs/gen_pn](https://github.com/aabs/gen_pn) An alternative Erlang/OTP compatible petri net library
+- [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible petri net library
 
 # License
 
