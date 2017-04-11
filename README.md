@@ -1,16 +1,21 @@
-# gen_pnet [![hex.pm](https://img.shields.io/hexpm/v/gen_pnet.svg?style=flat-square)](https://hex.pm/packages/gen_pnet) [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=dev)](https://travis-ci.org/joergen7/gen_pnet)
+# gen_pnet [![hex.pm](https://img.shields.io/hexpm/v/gen_pnet.svg?style=flat-square)](https://hex.pm/packages/gen_pnet) [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=master)](https://travis-ci.org/joergen7/gen_pnet)
 
 A generic Petri net OTP library.
 
-Some applications exhibit behavioral patterns that lend themselves to Petri nets. The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and what other operations might run in parallel.
+The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and how independent operations are timed.
 
-This OTP library is a framework for programming with Petri nets. It implements a very general form of Petri nets using Erlang terms as tokens. I.e., tokens are not only markers but can be any conceivable data structure. Furthermore, a place can hold any number of tokens not just one.
+This OTP library is a framework for programming with Petri nets. It implements a very general form of Petri nets using Erlang terms as tokens. This means that (i) tokens are not only markers but can be any data structure conceivable in Erlang, (ii) a place can hold any number of tokens not just one, (iii) transitions can perform any computation conceivable in Erlang.
 
-While many simulation libraries only mimic the concurrent behavior of Petri nets, the `gen_pnet' library allows the definition of nets with an arbitrary number of transitions competing for a place's tokens neither imposing order in the form of an orverarching loop nor otherwise constraining parallelism.
+The Petri net is specified by implementing a set of callback functions (much like the `gen_fsm` behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using `gen_pnet` and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests.
+
+# Usage
+
+
 
 # Resources
 
-- [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible petri net library
+- [joergen7/dinner](https://github.com/joergen7/dinner). A collection of examples using `gen_pnet`.
+- [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible Petri net library.
 
 # License
 
