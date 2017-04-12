@@ -12,10 +12,11 @@ The Petri net is specified by implementing a set of callback functions (much lik
 
 This section shows how Petri nets are started, queried, and manipulated with `gen_pnet`. We demonstrate the `gen_pnet` API by constructing a cookie vending machine. The [source code]() of the cookie vending machine module is part of the [example collection]().
 
+![Cookie vending machine Petri net](gen_pnet/blob/dev/priv/cvm2.png)
+*Cookie vending machine example net*
+ 
 ## Using the Cookie Vending Machine Example
 
-![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
- 
 In the following we use the cookie vending machine example Petri net. The [source code]() for this net is available online. First we compile the library and start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
 
     rebar3 shell
