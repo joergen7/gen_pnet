@@ -15,7 +15,7 @@ This section shows how Petri nets are started, queried, and manipulated with `ge
 ## Using the Cookie Vending Machine Example
 
 <img src="cvm2.png" alt="cvm2" width="347" height="191px" />
-![Cookie vending machine Petri net](priv/cvm2.png "Cookie vending machine Petri net")
+![Cookie vending machine Petri net](priv/cvm2.png)
 
 In the following we work with a cookie vending machine example Petri net. The source code for this net is given in cvm2.erl.
 
