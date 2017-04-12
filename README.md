@@ -14,8 +14,8 @@ This section shows how Petri nets are started, queried, and manipulated with `ge
 
 ## Using the Cookie Vending Machine Example
 
-![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/priv/cvm2.png)
-
+![Cookie vending machine Petri net](gen_pnet/priv/cvm2.png)
+ 
 In the following we work with a cookie vending machine example Petri net. The source code for this net is given in cvm2.erl.
 
 First we compile the library and start an interactive Erlang shell using <a href="https://github.com/erlang/rebar3">rebar3</a>.
