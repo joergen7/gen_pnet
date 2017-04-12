@@ -16,55 +16,43 @@ This section shows how Petri nets are started, queried, and manipulated with `ge
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
  
-In the following we work with a cookie vending machine example Petri net. The source code for this net is given in cvm2.erl.
+In the following we use the cookie vending machine example Petri net. The [source code]() for this net is available online. First we compile the library and start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
 
-First we compile the library and start an interactive Erlang shell using <a href="https://github.com/erlang/rebar3">rebar3</a>.
+    rebar3 shell
 
-```
-rebar3 shell
-'''
-We can start the cookie vending machine by using `gen_pnet:start_link/3'. Its first argument is the callback module that defines the cookie vending machine. It must implement all callback functions defined in the `gen_pnet' behaviour. The second argument is used to initialize the Petri net while the third argument is an option list, identical to the one used in the `gen_server:start_link/n' functions. `gen_pnet:start_link/3' returns the process id of the just created Petri net process.
-```
-{ok, Pid} = gen_pnet:start_link( cvm2, [], [] ).
-{ok, <0.115.0>}
-'''
-Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2'. This Petri net has five places: `coin_slot', `cash_box', `signal', `compartment', and `storage'. Initially, all places are empty except the `storage' place which holds six cookie packages.
-```
-gen_pnet:ls( Pid, coin_slot ).
-{ok, []}
+We start the cookie vending machine by using `gen_pnet:start_link/2`. Its first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the `gen_pnet` behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. `gen_pnet:start_link/2` returns the process id of the just created Petri net process.
 
-gen_pnet:ls( Pid, cash_box ).
-{ok, []}
+    {ok, Pid} = gen_pnet:start_link( cvm2, [] ).
+    {ok, <0.115.0>}
 
-gen_pnet:ls( Pid, signal ).
-{ok, []}
+Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
 
-gen_pnet:ls( Pid, compartment ).
-{ok, []}
+    gen_pnet:ls( Pid, storage ).
+    {ok,[cookie_box,cookie_box,cookie_box]}
 
-gen_pnet:ls( Pid, storage ).
-{ok,[cookie_box,cookie_box,cookie_box]}
+    gen_pnet:ls( Pid, compartment ).
+    {ok, []}
 
-gen_pnet:ls( Pid, some_place_that_does_not_exist ).
-{error,no_such_place}
-'''
-The way to use this cookie vending machine is to insert a coin by adding an according token to the `coin_slot' place. This is done with the `gen_pnet:add/2' function which takes a reference to a Petri net instance and a token which is added to the net.
-```
-gen_pnet:add( Pid, coin_slot, coin ).
-ok
-'''
-The effect of inserting a coin should be that the coin has wandered to the `cash_box' place, leaving the `coin_slot' place empty again. Also, a cookie token should have appeared in the formerly empty `compartment' place while the number of cookie packages in the `storage' place should have been reduced by 1. We can check this by querying the places as previously.
-```
-gen_pnet:ls( Pid, cash_box ). 
-{ok,[coin]}
+    gen_pnet:ls( Pid, some_place_that_does_not_exist ).
+    {error,{bad_place, some_place_that_does_not_exist}}
 
-gen_pnet:ls( Pid, compartment ).
-{ok,[cookie_box]}
+To interact with the cookie vending machine we insert a coin by adding an according token to the `coin_slot` place. This can be done with the `gen_pnet:produce_token/3` function which takes a reference to a Petri net instance, a place name, and a token which is added to that place.
 
-gen_pnet:ls( Pid, storage ).
-{ok,[cookie_box,cookie_box]}
-'''
-<h3>Implementing the Callback Functions</h3>
+    gen_pnet:produce_token( Pid, coin_slot, coin ).
+    ok
+
+The effect of inserting a coin is that the coin has wandered to the `cash_box` place, leaving the `coin_slot` place empty again. Also, a cookie token should have appeared in the formerly empty `compartment` place while the number of cookie packages in the `storage' place should have been reduced by one. We can check this by querying the places as previously.
+
+    gen_pnet:ls( Pid, cash_box ). 
+    {ok,[coin]}
+
+    gen_pnet:ls( Pid, compartment ).
+    {ok,[cookie_box]}
+
+    gen_pnet:ls( Pid, storage ).
+    {ok,[cookie_box,cookie_box]}
+
+## Implementing the Callback Functions
 
 In the previous section we showed how the `gen_pnet' API can be used to create and use predefined Petri nets. Now, let us have a look at the callback functions that need to be implemented to define a Petri net. These are the six callbacks
 <ul>
