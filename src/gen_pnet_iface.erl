@@ -29,13 +29,13 @@
 
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
-            {reply, _} | {reply, _, #{ atom() => [_] }}.
+            {reply, _} | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }}.
+            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }}.
+            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 

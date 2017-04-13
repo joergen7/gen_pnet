@@ -23,8 +23,7 @@
 -behaviour( gen_server ).
 
 -export( [new/3, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
-          produce/2, produce_token_lst/3, produce_token/3, get_stats/1,
-          reset_stats/1, stop/1] ).
+          get_stats/1, reset_stats/1, stop/1] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
@@ -42,13 +41,13 @@
 
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
-            {reply, _} | {reply, _, #{ atom() => [_] }}.
+            {reply, _} | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }}.
+            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }}.
+            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
@@ -166,24 +165,6 @@ call( Pid, Request ) ->
 cast( Pid, Request ) ->
   gen_server:cast( Pid, {cast, Request} ).
 
-%% @doc Produce the tokens on the places as described in the `ProdMap' argument
-%%      atomically in the net instance under process id `Pid'.
-%%
-%%      Note that production succeeds even if a non-existing process is
-%%      addressed or the net instance is down.
-produce( Pid, ProdMap ) ->
-  gen_server:cast( Pid, {produce, ProdMap} ).
-
-%% @doc Produce the tokens in `TokenLst' all on place `Place' atomically in the
-%%      net instance under process id `Pid'.
-produce_token_lst( Pid, Place, TokenLst ) ->
-  produce( Pid, #{ Place => TokenLst } ).
-
-%% @doc Produce the single token `Token' on place `Place' in the net instance
-%%      under process id `Pid'.
-produce_token( Pid, Place, Token ) ->
-  produce( Pid, #{ Place => [Token] } ).
-
 
 %%====================================================================
 %% Generic server callback functions
@@ -215,9 +196,10 @@ handle_call( {call, Request}, From,
     {reply, Reply} ->
       {reply, Reply, NetState};
     
-    {reply, Reply, ProdMap} ->
+    {reply, Reply, CnsMap, ProdMap} ->
+      NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
-      {reply, Reply, NetState}
+      {reply, Reply, NetState1}
 
   end;
 
@@ -293,9 +275,10 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
     noreply ->
       {noreply, NetState};
 
-    {noreply, ProdMap} ->
+    {noreply, CnsMap, ProdMap} ->
+      NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
-      {noreply, NetState}
+      {noreply, NetState1}
 
   end.
 
@@ -308,8 +291,10 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
     noreply ->
       {noreply, NetState};
 
-    {noreply, ProdMap} ->
-      produce( self(), ProdMap )
+    {noreply, CnsMap, ProdMap} ->
+      NetState1 = cns( CnsMap, NetState ),
+      produce( self(), ProdMap ),
+      {noreply, NetState1}
 
   end.
 
@@ -343,6 +328,15 @@ terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+%% @doc Produce the tokens on the places as described in the `ProdMap' argument
+%%      atomically in the net instance under process id `Pid'.
+%%
+%%      Note that production succeeds even if a non-existing process is
+%%      addressed or the net instance is down.
+produce( Pid, ProdMap ) ->
+  gen_server:cast( Pid, {produce, ProdMap} ).
+
 
 handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
