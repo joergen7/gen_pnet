@@ -305,7 +305,7 @@ init( NetState = #net_state{ net_mod = NetMod } ) ->
   PlaceLst = NetMod:place_lst(),
 
   F = fun( P, Acc ) ->
-        Acc#{ P => init_marking( P ) }
+        Acc#{ P => NetMod:init_marking( P ) }
       end,
 
   ProdMap = lists:foldl( F, #{}, PlaceLst ),
