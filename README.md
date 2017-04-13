@@ -18,7 +18,7 @@ To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in
 
 ## mix
 
-    {:lib_combin, "~> 0.1.1"}
+    {:gen_pnet, "~> 0.1.1"}
 
 # Usage
 
