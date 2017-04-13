@@ -14,20 +14,22 @@ This section shows how Petri nets are started, queried, and manipulated with `ge
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
 
-*Cookie vending machine example net*
+*Cookie vending machine example net. Place and transition names are atoms while, in this example, tokens are also atoms.*
  
 ## Using the Cookie Vending Machine Example
 
-In the following we use the cookie vending machine example Petri net. The [source code]() for this net is available online. First we compile the library and start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
+In the following we use the cookie vending machine example Petri net from the [gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples) repository. First, we clone it from GitHub and compile it. Then we start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
 
+    git clone https://github.com/joergen7/gen_pnet_examples.git
+    cd gen_pnet_examples
     rebar3 shell
 
-We start the cookie vending machine by using `gen_pnet:start_link/2`. Its first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the `gen_pnet` behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. `gen_pnet:start_link/2` returns the process id of the just created Petri net process.
+Compiling with rebar3 also fetches the `gen_pnet` library. We start the cookie vending machine by using `gen_pnet:start_link/2`.
 
-    {ok, Pid} = gen_pnet:start_link( cvm2, [] ).
+    {ok, Pid} = gen_pnet:start_link( cvm, [] ).
     {ok, <0.115.0>}
 
-Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
+ The first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the `gen_pnet` behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. On success, `gen_pnet:start_link/2` returns the process id of the just created Petri net process. Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
 
     gen_pnet:ls( Pid, storage ).
     {ok,[cookie_box,cookie_box,cookie_box]}
@@ -111,7 +113,7 @@ fire( b, _ConsumeMap, _UserInfo ) ->
 
 # Resources
 
-- [joergen7/dinner](https://github.com/joergen7/dinner). A collection of examples using `gen_pnet`.
+- [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples). A collection of examples using `gen_pnet`.
 - [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible Petri net library.
 
 # License
