@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 %%
-%% A generic Petri net OTP library.
+%% A generic Petri net OTP behavior.
 %%
 %% Copyright 2016 Jorgen Brandt. All Rights Reserved.
 %%
@@ -39,5 +39,5 @@
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
--callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
+-callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
 

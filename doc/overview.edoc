@@ -1,7 +1,7 @@
 @author Jorgen Brandt <joergen.brandt@onlinehome.de>
 @copyright 2016 Jorgen Brandt
 @version 0.1.1
-@title A generic Petri net OTP library.
+@title A generic Petri net OTP behavior.
 @doc
 
 

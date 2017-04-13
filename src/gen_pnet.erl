@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 %%
-%% A generic Petri net OTP library.
+%% A generic Petri net OTP behavior.
 %%
 %% Copyright 2016 Jorgen Brandt. All Rights Reserved.
 %%
@@ -51,7 +51,7 @@
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
--callback trigger( Place :: atom(), Token :: _ ) -> pass | consume.
+-callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
 
 
 %% Net callbacks
@@ -60,14 +60,14 @@
 
 -callback trsn_lst() -> [atom()].
 
--callback init_marking() -> #{ atom() => [_] }.
+-callback init_marking( atom() ) -> [_].
 
 -callback preset( Place :: atom() ) -> [atom()].
 
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
-            pass | {produce, #{ atom() => [_] }}.
+            abort | {produce, #{ atom() => [_] }}.
 
 %%====================================================================
 %% API functions
@@ -220,7 +220,7 @@ handle_cast( {produce, ProdMap},
 
   case progress( NetState1 ) of
 
-    pass ->
+    abort ->
       {noreply, NetState1};
 
     {delta, Mode, Pm} ->
@@ -300,21 +300,19 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
-init( NetState = #net_state{ marking = ArgInitMarking, net_mod = NetMod } ) ->
+init( NetState = #net_state{ net_mod = NetMod } ) ->
 
   PlaceLst = NetMod:place_lst(),
 
   F = fun( P, Acc ) ->
-        ArgTkLst = maps:get( P, ArgInitMarking, [] ),
-        Acc#{ P => ArgTkLst }
+        Acc#{ P => init_marking( P ) }
       end,
 
-  Marking = lists:foldl( F, #{}, PlaceLst ),
+  ProdMap = lists:foldl( F, #{}, PlaceLst ),
 
-  produce( self(), NetMod:init_marking() ),
+  produce( self(), ProdMap ),
 
-  {ok, NetState#net_state{ marking = Marking,
-                           stats   = undefined,
+  {ok, NetState#net_state{ stats   = undefined,
                            tstart  = os:system_time(),
                            cnt     = 0 }}.
 
@@ -344,8 +342,8 @@ handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
         F = fun( Tk, A ) ->
               case IfaceMod:trigger( P, Tk ) of
-                pass    -> [Tk|A];
-                consume -> A
+                pass -> [Tk|A];
+                drop -> A
               end
             end,
 
@@ -383,7 +381,7 @@ prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
   NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
 -spec progress( #net_state{} ) ->
-        pass | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
+        abort | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
 
 progress( #net_state{ marking = Marking, net_mod = NetMod } ) ->
 
@@ -408,13 +406,13 @@ progress( #net_state{ marking = Marking, net_mod = NetMod } ) ->
   attempt_progress( ModeMap, NetMod ).
 
 
--spec attempt_progress( map(), atom() ) -> pass | {delta, _, _}.
+-spec attempt_progress( map(), atom() ) -> abort | {delta, _, _}.
 
 attempt_progress( ModeMap, NetMod ) ->
 
   case maps:size( ModeMap ) of
 
-    0 -> pass;
+    0 -> abort;
     _ ->
 
       TrsnLst = maps:keys( ModeMap ),
@@ -427,7 +425,7 @@ attempt_progress( ModeMap, NetMod ) ->
         {produce, ProdMap} ->
           {delta, Mode, ProdMap};
         
-        pass ->
+        abort ->
           attempt_progress( ModeMap#{ Trsn := ModeLst--Mode }, NetMod )
 
       end

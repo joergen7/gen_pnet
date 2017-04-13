@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 %%
-%% A generic Petri net OTP library.
+%% A generic Petri net OTP behavior.
 %%
 %% Copyright 2016 Jorgen Brandt. All Rights Reserved.
 %%

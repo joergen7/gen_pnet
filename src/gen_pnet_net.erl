@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 %%
-%% A generic Petri net OTP library.
+%% A generic Petri net OTP behavior.
 %%
 %% Copyright 2016 Jorgen Brandt. All Rights Reserved.
 %%
@@ -24,11 +24,11 @@
 
 -callback trsn_lst() -> [atom()].
 
--callback init_marking() -> #{ atom() => [_] }.
+-callback init_marking( atom() ) -> [_].
 
 -callback preset( Place :: atom() ) -> [atom()].
 
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
-            pass | {produce, #{ atom() => [_] }}.
+            abort | {produce, #{ atom() => [_] }}.
