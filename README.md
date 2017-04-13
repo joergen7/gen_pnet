@@ -169,7 +169,7 @@ Here, we simply let any token pass.
 
 ## Using the Cookie Vending Machine Example
 
-In the following we demonstrate how to start and play with the previously defined cookie vending machine example. You can either copy the above code in an Erlang callback module of your own or you can obtain the module from the [gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples) repository. Here, we clone it from GitHub and compile it. Then we start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
+In the following we demonstrate how to start and play with the previously defined cookie vending machine example. You can either copy the above code in an Erlang callback module of your own or you can obtain the module from the [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples) repository. Here, we clone it from GitHub and compile it. Then we start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
 
     git clone https://github.com/joergen7/gen_pnet_examples.git
     cd gen_pnet_examples
