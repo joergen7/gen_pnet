@@ -300,7 +300,7 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
-init( NetState = #net_state{ net_mod = NetMod } ) ->
+init( NetState = #net_state{ marking = ArgMarking, net_mod = NetMod } ) ->
 
   PlaceLst = NetMod:place_lst(),
 
@@ -308,11 +308,12 @@ init( NetState = #net_state{ net_mod = NetMod } ) ->
         Acc#{ P => NetMod:init_marking( P ) }
       end,
 
-  ProdMap = lists:foldl( F, #{}, PlaceLst ),
+  InitMarking = lists:foldl( F, #{}, PlaceLst ),
 
-  produce( self(), ProdMap ),
+  produce( self(), ArgMarking ),
 
-  {ok, NetState#net_state{ stats   = undefined,
+  {ok, NetState#net_state{ marking = InitMarking,
+                           stats   = undefined,
                            tstart  = os:system_time(),
                            cnt     = 0 }}.
 
