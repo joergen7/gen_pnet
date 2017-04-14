@@ -58,7 +58,7 @@ Here, we define the net to have the five places in the cookie vending machine.
 
 #### trsn_lst/0
 
-The `trsn_lst/0` function lets us define the names of all transitions in the net:
+The `trsn_lst/0` function lets us define the names of all transitions in the net.
 
     trsn_lst() ->
       [a, b].
@@ -105,9 +105,9 @@ Here, the firing of the transition `a` produces a `coin` token on the `cash_box`
 
 ### Interface Callback Functions
 
-In addition to the net callback functions there are another six callback functions that determine how the net instance appears as an Erlang actor to the outside world:
+In addition to the structure callback functions there are another six callback functions that determine how the net instance appears as an Erlang actor to the outside world:
 
-- `code_change/3` determines what happens when a hot code reload happens
+- `code_change/3` determines what happens when a hot code reload appears
 - `handle_call/3` synchronous message exchange
 - `handle_cast/2` asynchronous message reception
 - `handle_info/2` asynchronous reception of an unformatted message
@@ -116,7 +116,7 @@ In addition to the net callback functions there are another six callback functio
 
 #### code_change/3
 
-The `code_change/3` function determines what happens when a hot code reload happens. This callback is identical to the `code_change/3` function in the `gen_server` behavior.
+The `code_change/3` function determines what happens when a hot code reload appears. This callback is identical to the `code_change/3` function in the `gen_server` behavior.
 
     code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
 

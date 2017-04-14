@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016 Jorgen Brandt. All Rights Reserved.
+%% Copyright 2016-2017 Jorgen Brandt.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,21 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%% -------------------------------------------------------------------
 %% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
+%% @version 0.1.1
+%% @copyright 2016-2017 Jorgen Brandt.
+%% @see gen_pnet_iface
+%% @see gen_pnet_struct
+%% @doc Callback function definitions and API for the `gen_pnet' behavior.
+%%
+%% The callbacks defined for the `gen_pnet' behavior may be separated into a
+%% Petri net structure part and an actor interface part. Both behaviors are
+%% documented in the `gen_pnet_struct' and `gen_pnet_iface' modules
+%% respectively.
+%%
+%% @end
+%% -------------------------------------------------------------------
 
 -module( gen_pnet ).
 
@@ -54,7 +68,7 @@
 -callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
 
 
-%% Net callbacks
+%% Structure callbacks
 
 -callback place_lst() -> [atom()].
 
