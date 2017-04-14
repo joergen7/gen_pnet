@@ -6,7 +6,7 @@ The major advantage of modeling applications with Petri nets is that they provid
 
 This OTP behavior allows programming with Petri nets. It implements a very general form of Petri nets using Erlang terms as tokens. This means that (i) tokens are not only markers but can be any data structure conceivable in Erlang, (ii) a place can hold any number of tokens not just one, (iii) transitions can perform any computation conceivable in Erlang.
 
-The Petri net is specified by implementing a set of callback functions (much like the `gen_fsm` behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using `gen_pnet` and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests.
+The Petri net is specified by implementing a set of callback functions (much like the `gen_fsm` behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using `gen_pnet` and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests. Conflicting transitions fire randomly and fairly.
 
 The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the `gen_pnet` module's API is available online.
 
@@ -24,7 +24,7 @@ To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in
 
 # Usage
 
-This section shows how Petri nets are started, queried, and manipulated with `gen_pnet`. We demonstrate the `gen_pnet` API by constructing a cookie vending machine. The [source code]() of the cookie vending machine module is part of the [example collection]().
+This section shows how Petri nets are started, queried, and manipulated with `gen_pnet`. We demonstrate the `gen_pnet` API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples).
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
 
