@@ -8,11 +8,11 @@ ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+
 _build
 rebar.lock
-
+rebar3.crashdump
 doc/*.html
 doc/edoc-info
 doc/erlang.png
 doc/stylesheet.css
-rebar3.crashdump

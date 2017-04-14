@@ -1,7 +1,7 @@
 @author Jorgen Brandt <joergen.brandt@onlinehome.de>
 @copyright 2016 Jorgen Brandt
 @version 0.1.1
-@title gen_pnet: A generic Petri net OTP behavior.
+@title A generic Petri net OTP behavior.
 @doc
 
 The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and how independent operations are timed.
