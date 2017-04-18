@@ -36,7 +36,7 @@
 
 -behaviour( gen_server ).
 
--export( [new/3, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
+-export( [new/2, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
           get_stats/1, reset_stats/1, stop/1] ).
 
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
