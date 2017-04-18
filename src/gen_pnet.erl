@@ -36,11 +36,16 @@
 
 -behaviour( gen_server ).
 
+% API functions
 -export( [new/2, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
           get_stats/1, reset_stats/1, stop/1] ).
 
+% gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
+
+% Helper functions
+-export( [ls_place/2] ).
 
 -include( "gen_pnet.hrl" ).
 
@@ -336,6 +341,17 @@ init( NetState = #net_state{ net_mod = NetMod } ) ->
 terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   IfaceMod:terminate( Reason, NetState ).
   
+%%====================================================================
+%% Helper functions
+%%====================================================================
+
+%% @doc Lists the tokens on a given place from a net state.
+%%
+%%      Throws an error if the list does not exist.
+-spec ls_place( _, #net_state{} ) -> [_].
+
+ls_place( Place, #net_state{ marking = Marking } ) ->
+  maps:get( Place, Marking ).
 
 
 %%====================================================================
@@ -378,7 +394,6 @@ handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 cns( Mode, NetState = #net_state{ marking = Marking } ) ->
 
   F = fun( T, TkLst, Acc ) ->
-        #{ T := TkLst } = Marking,
         Acc#{ T => TkLst--maps:get( T, Mode, [] ) }
       end,
 
@@ -389,7 +404,6 @@ cns( Mode, NetState = #net_state{ marking = Marking } ) ->
 prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
 
   F = fun( T, TkLst, Acc ) ->
-        #{ T := TkLst } = Marking,
         Acc#{ T => TkLst++maps:get( T, ProdMap, [] ) }
       end,
 

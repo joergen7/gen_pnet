@@ -127,17 +127,16 @@ The `handle_call/3` function performs a synchronous exchange of messages between
     handle_call( insert_coin, _, _ ) ->
       {reply, ok, #{}, #{ coin_slot => [coin] }};
 
-    handle_call( remove_cookie_box, _,
-                 #net_state{ marking = #{ compartment := C } } ) ->
+    handle_call( remove_cookie_box, _, NetState ) ->
 
-      case C of
+      case gen_pnet:ls_place( compartment, NetState ) of
         []    -> {reply, {error, empty_compartment}};
         [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
       end;
 
     handle_call( _, _, _ ) -> {reply, {error, bad_msg}}.
 
-Here, we react to two kinds of messages: Inserting a coin in the coin slot and removing a cookie box from the compartment. Thus, we react to an `insert_coin` message by replying with `ok`, consuming nothing and producing a `coin` token on the `coin_slot` place. When receiving a `remove_cookie_box` message, we check whether the `compartment` place is empty, replying with an error message if it is, otherwise replying with `ok`, consuming one `cookie_box` token from the `compartment` place, and producing nothing. Calls that are neither `insert_coin` nor `remove_cookie_box` are responded to with an error message.
+Here, we react to two kinds of messages: Inserting a coin in the coin slot and removing a cookie box from the compartment. Thus, we react to an `insert_coin` message by replying with `ok`, consuming nothing and producing a `coin` token on the `coin_slot` place. When receiving a `remove_cookie_box` message, we check whether the `compartment` place is empty, replying with an error message if it is, otherwise replying with `ok`, consuming one `cookie_box` token from the `compartment` place, and producing nothing. We can inspect the tokens on a given place by using the `ls_place/2` helper function. Calls that are neither `insert_coin` nor `remove_cookie_box` are responded to with an error message.
 
 #### handle_cast/2
 
