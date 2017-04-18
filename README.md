@@ -1,5 +1,5 @@
-# A generic Petri net OTP behavior.
-
+# gen_pnet
+###### A generic Petri net OTP behavior.
 [![hex.pm](https://img.shields.io/hexpm/v/gen_pnet.svg?style=flat-square)](https://hex.pm/packages/gen_pnet) [![Build Status](https://travis-ci.org/joergen7/gen_pnet.svg?branch=master)](https://travis-ci.org/joergen7/gen_pnet)
 
 The major advantage of modeling applications with Petri nets is that they provide a natural view on the concurrent behavior of an application. This is achieved by making explicit the preconditions for an operation to be carried out while leaving implicit how and when an operation is triggered and how independent operations are timed.
@@ -10,31 +10,31 @@ The Petri net is specified by implementing a set of callback functions (much lik
 
 The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the `gen_pnet` module's API is available online.
 
-# Adding gen_pnet to a Project
+## Usage
 
-## rebar3
-
-To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.1"}`.
-
-    {deps, [{gen_pnet, "0.1.1"}]}.
-
-## mix
-
-    {:gen_pnet, "~> 0.1.1"}
-
-# Usage
-
-This section shows how Petri nets are started, queried, and manipulated with `gen_pnet`. We demonstrate the `gen_pnet` API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples).
+This section shows how the `gen_pnet` library can be added to your project, how Petri nets are defined in `gen_pnet`, and how Petri net instances are started, queried, and manipulated. We demonstrate the API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples).
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
 
 *Cookie vending machine example net. Place and transition names are atoms while, in this example, tokens are also atoms.*
 
-## Implementing the Callback Functions
+### Adding gen_pnet to a Project
 
-Let us have a look at the callback functions that need to be implemented to define a Petri net.
+#### rebar3
 
-### Net Callback Functions
+To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.1"}`.
+
+    {deps, [{gen_pnet, "0.1.1"}]}.
+
+#### mix
+
+    {:gen_pnet, "~> 0.1.1"}
+
+### Defining a Petri net
+
+Petri nets are defined by creating a callback module that implements the `gen_pnet` behavior by providing a number of callback functions.
+
+### Callback Functions for the Net Structure
 
 There are six callbacks that define the Petri net structure and its initial marking:
 
@@ -103,7 +103,7 @@ The `fire/2` function defines what tokens are produced when a given transition f
 Here, the firing of the transition `a` produces a `coin` token on the `cash_box` place and a `sig` token on the `signal` place. Similarly, the firing of the transition `b` produces a `cookie_box` token on the `compartment` place. We do not need to state the tokens to be consumed because the firing mode already uniquely identifies the tokens to be consumed.
 
 
-### Interface Callback Functions
+### Callback Functions for the Actor Interface
 
 In addition to the structure callback functions there are another six callback functions that determine how the net instance appears as an Erlang actor to the outside world:
 
@@ -169,7 +169,7 @@ The `trigger/2` function determines what happens when a token is produced on a g
 
 Here, we simply let any token pass.
 
-## Using the Cookie Vending Machine Example
+### Starting and Querying the Cookie Vending Machine Example
 
 In the following we demonstrate how to start and play with the previously defined cookie vending machine example. You can either copy the above code in an Erlang callback module of your own or you can obtain the module from the [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples) repository. Here, we clone it from GitHub and compile it. Then we start an interactive Erlang shell using [rebar3](https://github.com/erlang/rebar3).
 
@@ -220,12 +220,15 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
     {error,empty_compartment}
 
 
-# Resources
+## Resources
 
 - [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples). A collection of examples using `gen_pnet`.
 - [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible Petri net library.
 
+## Authors
 
-# License
+- Jorgen Brandt (joergen7) [joergen.brandt@onlinehome.de](mailto:joergen.brandt@onlinehome.de)
+
+## License
 
 [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0.html)
