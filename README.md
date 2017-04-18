@@ -12,7 +12,7 @@ The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the `
 
 ## Usage
 
-This section shows how the `gen_pnet` library can be added to your project, how Petri nets are defined in `gen_pnet`, and how Petri net instances are started, queried, and manipulated. We demonstrate the API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples).
+This section shows how the `gen_pnet` library can be added to your project, how Petri nets are defined, and how Petri net instances are started, queried, and manipulated. We demonstrate the API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples) for `gen_pnet`.
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
 
