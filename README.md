@@ -219,6 +219,9 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
     gen_pnet:call( Pid, remove_cookie_box ).
     {error,empty_compartment}
 
+## System Requirements
+
+- Erlang OTP 18.0 or higher.
 
 ## Resources
 
