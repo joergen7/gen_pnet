@@ -18,8 +18,8 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.1
-%% @copyright 2016-2017 Jorgen Brandt.
+%% @version 0.1.2
+%% @copyright 2016-2017 Jorgen Brandt
 %% @doc Callback function definitions for Petri net structure definition.
 %%
 %% There are six callbacks that define the Petri net structure and its initial

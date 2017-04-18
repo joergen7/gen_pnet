@@ -18,8 +18,8 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.1
-%% @copyright 2016-2017 Jorgen Brandt.
+%% @version 0.1.2
+%% @copyright 2016-2017 Jorgen Brandt
 %% @see gen_pnet_iface
 %% @see gen_pnet_struct
 %% @doc Callback function definitions and API for the `gen_pnet' behavior.
