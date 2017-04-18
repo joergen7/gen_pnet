@@ -94,8 +94,8 @@
 %%
 %% @see start_link/2
 %% @see start_link/3
-new( InitMarking, NetMod, IfaceMod ) ->
-  #net_state{ marking = InitMarking, net_mod = NetMod, iface_mod = IfaceMod }.
+new( NetMod, IfaceMod ) ->
+  #net_state{ net_mod = NetMod, iface_mod = IfaceMod }.
 
 %% @doc Starts an unregistered net instance.
 %%
@@ -314,7 +314,7 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
-init( NetState = #net_state{ marking = ArgMarking, net_mod = NetMod } ) ->
+init( NetState = #net_state{ net_mod = NetMod } ) ->
 
   PlaceLst = NetMod:place_lst(),
 
@@ -324,7 +324,7 @@ init( NetState = #net_state{ marking = ArgMarking, net_mod = NetMod } ) ->
 
   InitMarking = lists:foldl( F, #{}, PlaceLst ),
 
-  produce( self(), ArgMarking ),
+  produce( self(), #{} ),
 
   {ok, NetState#net_state{ marking = InitMarking,
                            stats   = undefined,
