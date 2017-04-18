@@ -221,7 +221,8 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
 
 ## System Requirements
 
-- Erlang OTP 18.0 or higher.
+- Erlang OTP 18.0 or higher
+- Rebar3 3.0.0 or higher
 
 ## Resources
 
