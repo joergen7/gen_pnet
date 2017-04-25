@@ -37,7 +37,7 @@
 -behaviour( gen_server ).
 
 % API functions
--export( [new/2, start_link/2, start_link/3, ls/2, marking/1, call/2, cast/2,
+-export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, cast/2,
           get_stats/1, reset_stats/1, stop/1] ).
 
 % gen_server callbacks
@@ -45,7 +45,7 @@
           init/1, terminate/2] ).
 
 % Helper functions
--export( [ls_place/2] ).
+-export( [ls_place/2, get_usr_info/1] ).
 
 -include( "gen_pnet.hrl" ).
 
@@ -82,7 +82,7 @@
 
 -callback trsn_lst() -> [atom()].
 
--callback init_marking( atom() ) -> [_].
+-callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
 
 -callback preset( Place :: atom() ) -> [atom()].
 
@@ -102,8 +102,8 @@
 %%
 %% @see start_link/2
 %% @see start_link/3
-new( NetMod ) when is_atom( NetMod ) ->
-  #net_state{ net_mod = NetMod }.
+new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
+  #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
 
 %% @doc Starts an unregistered net instance.
 %%
@@ -320,12 +320,12 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 init( {IfaceMod, Args} ) ->
 
   {ok, NetState} = IfaceMod:init( Args ),
-  #net_state{ net_mod = NetMod } = NetState,
+  #net_state{ net_mod = NetMod, usr_info = UsrInfo } = NetState,
 
   PlaceLst = NetMod:place_lst(),
 
   F = fun( P, Acc ) ->
-        Acc#{ P => NetMod:init_marking( P ) }
+        Acc#{ P => NetMod:init_marking( P, UsrInfo ) }
       end,
 
   InitMarking = lists:foldl( F, #{}, PlaceLst ),
@@ -354,6 +354,11 @@ terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 ls_place( Place, #net_state{ marking = Marking } ) ->
   maps:get( Place, Marking ).
+
+-spec get_usr_info( #net_state{} ) -> _.
+
+get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
+  UsrInfo.
 
 
 %%====================================================================

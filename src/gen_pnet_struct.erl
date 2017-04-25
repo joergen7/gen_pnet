@@ -139,7 +139,7 @@
 
 -callback trsn_lst() -> [atom()].
 
--callback init_marking( atom() ) -> [_].
+-callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
 
 -callback preset( Place :: atom() ) -> [atom()].
 

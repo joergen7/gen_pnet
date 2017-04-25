@@ -12,6 +12,7 @@ rel/example_project
 _build
 rebar.lock
 rebar3.crashdump
+erl_crash.dump
 doc/*.html
 doc/edoc-info
 doc/erlang.png
