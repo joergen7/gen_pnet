@@ -84,7 +84,7 @@
 
 -callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
 
--callback preset( Place :: atom() ) -> [atom()].
+-callback preset( Trsn :: atom() ) -> [atom()].
 
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
