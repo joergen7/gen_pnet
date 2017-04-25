@@ -462,7 +462,7 @@ attempt_progress( ModeMap, NetMod ) ->
           {delta, Mode, ProdMap};
         
         abort ->
-          attempt_progress( ModeMap#{ Trsn := ModeLst--Mode }, NetMod )
+          attempt_progress( ModeMap#{ Trsn := ModeLst--[Mode] }, NetMod )
 
       end
   end.
