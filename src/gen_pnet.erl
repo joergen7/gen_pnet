@@ -38,7 +38,7 @@
 
 % API functions
 -export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, cast/2,
-          get_stats/1, reset_stats/1, stop/1] ).
+          get_stats/1, reset_stats/1, stop/1, usr_info/1] ).
 
 % gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -88,7 +88,7 @@
 
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
--callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
+-callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
             abort | {produce, #{ atom() => [_] }}.
 
 %%====================================================================
@@ -148,6 +148,9 @@ ls( Pid, Place ) when is_atom( Place ) ->
 marking( Pid ) ->
   gen_server:call( Pid, marking ).
 
+usr_info( Pid ) ->
+  gen_server:call( Pid, usr_info ).
+
 %% @doc Requests the net instance under process id `Pid' to return the
 %%      throughput of the net.
 %%
@@ -204,6 +207,9 @@ handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
 
 handle_call( marking, _From, NetState = #net_state{ marking = Marking } ) ->
   {reply, Marking, NetState};
+
+handle_call( usr_info, _From, NetState = #net_state{ usr_info = UsrInfo } ) ->
+  {reply, UsrInfo, NetState};
 
 handle_call( {call, Request}, From,
              NetState = #net_state{ iface_mod = IfaceMod } ) ->

@@ -145,5 +145,5 @@
 
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
 
--callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] } ) ->
+-callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
             abort | {produce, #{ atom() => [_] }}.
