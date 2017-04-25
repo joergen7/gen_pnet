@@ -425,7 +425,9 @@ prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
 -spec progress( #net_state{} ) ->
         abort | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
 
-progress( #net_state{ marking = Marking, net_mod = NetMod } ) ->
+progress( #net_state{ marking  = Marking,
+                      net_mod  = NetMod,
+                      usr_info = UsrInfo } ) ->
 
   % get all transitions in the net
   TrsnLst = NetMod:trsn_lst(),
@@ -445,12 +447,12 @@ progress( #net_state{ marking = Marking, net_mod = NetMod } ) ->
   ModeMap = lists:foldl( F, #{}, TrsnLst ),
 
   % delegate enabled mode map to attempt_progress function
-  attempt_progress( ModeMap, NetMod ).
+  attempt_progress( ModeMap, NetMod, UsrInfo ).
 
 
--spec attempt_progress( map(), atom() ) -> abort | {delta, _, _}.
+-spec attempt_progress( map(), atom(), _ ) -> abort | {delta, _, _}.
 
-attempt_progress( ModeMap, NetMod ) ->
+attempt_progress( ModeMap, NetMod, UsrInfo ) ->
 
   case maps:size( ModeMap ) of
 
@@ -462,7 +464,7 @@ attempt_progress( ModeMap, NetMod ) ->
       #{ Trsn := ModeLst } = ModeMap,
       Mode = lib_combin:pick_from( ModeLst ),
 
-      case NetMod:fire( Trsn, Mode ) of
+      case NetMod:fire( Trsn, Mode, UsrInfo ) of
 
         {produce, ProdMap} ->
           {delta, Mode, ProdMap};
@@ -470,8 +472,10 @@ attempt_progress( ModeMap, NetMod ) ->
         abort ->
           ModeLst1 = ModeLst--[Mode],
           case ModeLst1 of
-            []    -> attempt_progress( maps:remove( Trsn, ModeMap ), NetMod );
-            [_|_] -> attempt_progress( ModeMap#{ Trsn := ModeLst1 }, NetMod )
+            []    ->
+              attempt_progress( maps:remove( Trsn, ModeMap ), NetMod, UsrInfo );
+            [_|_] ->
+              attempt_progress( ModeMap#{ Trsn := ModeLst1 }, NetMod, UsrInfo )
           end
 
       end
