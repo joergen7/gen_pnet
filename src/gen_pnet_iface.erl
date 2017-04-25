@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.2
+%% @version 0.1.3
 %% @copyright 2016-2017 Jorgen Brandt
 %% @doc Callback function definitions for Petri net actor interface.
 %%
@@ -162,6 +162,8 @@
 
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
+
+-callback init( Args :: _ ) -> {ok, #net_state{}}.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 

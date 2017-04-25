@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.2
+%% @version 0.1.3
 %% @copyright 2016-2017 Jorgen Brandt
 %% @see gen_pnet_iface
 %% @see gen_pnet_struct
@@ -68,9 +68,12 @@
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
             noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
 
+-callback init( Args :: _ ) -> {ok, #net_state{}}.
+
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
 -callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
+
 
 
 %% Structure callbacks
@@ -99,8 +102,8 @@
 %%
 %% @see start_link/2
 %% @see start_link/3
-new( NetMod, IfaceMod ) ->
-  #net_state{ net_mod = NetMod, iface_mod = IfaceMod }.
+new( NetMod ) when is_atom( NetMod ) ->
+  #net_state{ net_mod = NetMod }.
 
 %% @doc Starts an unregistered net instance.
 %%
@@ -111,11 +114,9 @@ new( NetMod, IfaceMod ) ->
 %%      handed down to `gen_server:start_link/3' as is.
 %%
 %% @see new/3
-start_link( Mod, Options ) when is_atom( Mod ) ->
-  start_link( #net_state{ iface_mod = Mod, net_mod = Mod }, Options );
-
-start_link( NetState = #net_state{}, Options ) ->
-  gen_server:start_link( ?MODULE, NetState, Options ).
+start_link( IfaceMod, Args, Options )
+when is_atom( IfaceMod ), is_list( Options ) ->
+  gen_server:start_link( ?MODULE, {IfaceMod, Args}, Options ).
 
 %% @doc Starts a net instance registered to `ServerName' using the callback
 %%      module `Mod' or a `#net_state' record instance which can be created
@@ -125,12 +126,9 @@ start_link( NetState = #net_state{}, Options ) ->
 %%      `gen_server:start_link/4' as is.
 %%
 %% @see new/3
-start_link( ServerName, Mod, Options ) when is_atom( Mod ) ->
-  NetState = #net_state{ iface_mod = Mod, net_mod = Mod },
-  start_link( ServerName, NetState, Options );
-
-start_link( ServerName, NetState = #net_state{}, Options ) ->
-  gen_server:start_link( ServerName, ?MODULE, NetState, Options ).
+start_link( ServerName, IfaceMod, Args, Options )
+when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
+  gen_server:start_link( ServerName, ?MODULE, {IfaceMod, Args}, Options ).
 
 %% @doc Requests the net instance under process id `Pid' to list all
 %%      tokens on the place named `Place'.
@@ -138,7 +136,7 @@ start_link( ServerName, NetState = #net_state{}, Options ) ->
 %%      Herein, `Pid' can also be a registered process name. The return value is
 %%      either `{ok, [_]}'' if the place exists or a `{error, #bad_place{}}'
 %%      tuple.
-ls( Pid, Place ) ->
+ls( Pid, Place ) when is_atom( Place ) ->
   gen_server:call( Pid, {ls, Place} ).
 
 %% @doc Requests the net instance under process id `Pid' to return a
@@ -319,7 +317,10 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
-init( NetState = #net_state{ net_mod = NetMod } ) ->
+init( {IfaceMod, Args} ) ->
+
+  {ok, NetState} = IfaceMod:init( Args ),
+  #net_state{ net_mod = NetMod } = NetState,
 
   PlaceLst = NetMod:place_lst(),
 
@@ -331,10 +332,11 @@ init( NetState = #net_state{ net_mod = NetMod } ) ->
 
   produce( self(), #{} ),
 
-  {ok, NetState#net_state{ marking = InitMarking,
-                           stats   = undefined,
-                           tstart  = os:system_time(),
-                           cnt     = 0 }}.
+  {ok, NetState#net_state{ iface_mod = IfaceMod,
+                           marking   = InitMarking,
+                           stats     = undefined,
+                           tstart    = os:system_time(),
+                           cnt       = 0 }}.
 
 
 %% @private

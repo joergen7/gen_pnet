@@ -22,13 +22,13 @@ This section shows how the `gen_pnet` library can be added to your project, how 
 
 #### rebar3
 
-To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.2"}`.
+To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.3"}`.
 
-    {deps, [{gen_pnet, "0.1.2"}]}.
+    {deps, [{gen_pnet, "0.1.3"}]}.
 
 #### mix
 
-    {:gen_pnet, "~> 0.1.2"}
+    {:gen_pnet, "~> 0.1.3"}
 
 ### Defining a Petri net
 
