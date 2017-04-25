@@ -155,17 +155,24 @@
 
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
-            {reply, _} | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}.
+              {reply, _}
+            | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _, _}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
+              noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _}.
 
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
+              noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _}.
 
 -callback init( Args :: _ ) -> {ok, #net_state{}}.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
--callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
+-callback trigger( Place :: atom(), Token :: _, NetState :: #net_state{} ) ->
+            pass | drop.
 

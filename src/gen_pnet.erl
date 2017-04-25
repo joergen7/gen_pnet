@@ -60,19 +60,26 @@
 
 -callback handle_call( Request :: _, From :: {pid(), _},
                        NetState :: #net_state{} ) ->
-            {reply, _} | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}.
+              {reply, _}
+            | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _, _}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
+              noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _}.
 
 -callback handle_info( Info :: _, NetState :: #net_state{} ) ->
-            noreply | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}.
+              noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
+            | {stop, _}.
 
 -callback init( Args :: _ ) -> {ok, #net_state{}}.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
--callback trigger( Place :: atom(), Token :: _ ) -> pass | drop.
+-callback trigger( Place :: atom(), Token :: _, NetState :: #net_state{} ) ->
+            pass | drop.
 
 
 
@@ -222,7 +229,10 @@ handle_call( {call, Request}, From,
     {reply, Reply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
-      {reply, Reply, NetState1}
+      {reply, Reply, NetState1};
+
+    {stop, Reason, Reply} ->
+      {stop, Reason, Reply, NetState}
 
   end;
 
@@ -301,7 +311,10 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
     {noreply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
-      {noreply, NetState1}
+      {noreply, NetState1};
+
+    {stop, Reason} ->
+      {stop, Reason, NetState}
 
   end.
 
@@ -317,7 +330,10 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
     {noreply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
-      {noreply, NetState1}
+      {noreply, NetState1};
+
+    {stop, Reason} ->
+      {stop, Reason, NetState}
 
   end.
 
@@ -385,7 +401,7 @@ handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   G = fun( P, TkLst, Acc ) ->
 
         F = fun( Tk, A ) ->
-              case IfaceMod:trigger( P, Tk ) of
+              case IfaceMod:trigger( P, Tk, NetState ) of
                 pass -> [Tk|A];
                 drop -> A
               end
