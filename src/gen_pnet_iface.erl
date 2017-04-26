@@ -157,6 +157,8 @@
                        NetState :: #net_state{} ) ->
               {reply, _}
             | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
+            | noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
             | {stop, _, _}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->

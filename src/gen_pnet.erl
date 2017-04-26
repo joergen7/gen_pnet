@@ -62,6 +62,8 @@
                        NetState :: #net_state{} ) ->
               {reply, _}
             | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
+            | noreply
+            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
             | {stop, _, _}.
 
 -callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
@@ -230,6 +232,14 @@ handle_call( {call, Request}, From,
       NetState1 = cns( CnsMap, NetState ),
       produce( self(), ProdMap ),
       {reply, Reply, NetState1};
+
+    noreply ->
+      {noreply, NetState};
+
+    {noreply, CnsMap, ProdMap} ->
+      NetState1 = cns( CnsMap, NetState ),
+      produce( self(), ProdMap ),
+      {noreply, NetState1};
 
     {stop, Reason, Reply} ->
       {stop, Reason, Reply, NetState}
