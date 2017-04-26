@@ -37,8 +37,8 @@
 -behaviour( gen_server ).
 
 % API functions
--export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, cast/2,
-          get_stats/1, reset_stats/1, stop/1, usr_info/1] ).
+-export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
+          cast/2, get_stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
 
 % gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -185,6 +185,9 @@ stop( Pid ) ->
 call( Pid, Request ) ->
   gen_server:call( Pid, {call, Request} ).
 
+call( Pid, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
+  gen_server:call( Pid, {call, Request}, Timeout ).
+
 %% @doc Send the request term `Request' asynchronously to the net instance under
 %%      process id `Pid'.
 %%
@@ -194,6 +197,8 @@ call( Pid, Request ) ->
 cast( Pid, Request ) ->
   gen_server:cast( Pid, {cast, Request} ).
 
+reply( Client, Reply ) when is_tuple( Client ) ->
+  gen_server:reply( Client, Reply ).
 
 %%====================================================================
 %% Generic server callback functions
