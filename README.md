@@ -6,13 +6,13 @@ The major advantage of modeling applications with Petri nets is that they provid
 
 This OTP behavior allows programming with Petri nets. It implements a very general form of Petri nets using Erlang terms as tokens. This means that (i) tokens are not only markers but can be any data structure conceivable in Erlang, (ii) a place can hold any number of tokens not just one, (iii) transitions can perform any computation conceivable in Erlang.
 
-The Petri net is specified by implementing a set of callback functions (much like the `gen_fsm` behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using `gen_pnet` and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests. Conflicting transitions fire randomly and fairly.
+The Petri net is specified by implementing a set of callback functions (much like the gen_fsm behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using gen_pnet and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests. Conflicting transitions fire randomly and fairly.
 
 The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the `gen_pnet` module's API is available online.
 
 ## Usage
 
-This section shows how the `gen_pnet` library can be added to your project, how Petri nets are defined, and how Petri net instances are started, queried, and manipulated. We demonstrate the API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples) for `gen_pnet`.
+This section shows how the gen_pnet library can be added to your project, how Petri nets are defined, and how Petri net instances are started, queried, and manipulated. We demonstrate the API by constructing a cookie vending machine. The [source code](https://github.com/joergen7/gen_pnet_examples/blob/master/src/cvm.erl) of the cookie vending machine module is part of the [example collection](https://github.com/joergen7/gen_pnet_examples) for gen_pnet.
 
 ![Cookie vending machine Petri net](https://github.com/joergen7/gen_pnet/blob/dev/priv/cvm2.png)
 
@@ -22,7 +22,7 @@ This section shows how the `gen_pnet` library can be added to your project, how 
 
 #### rebar3
 
-To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.3"}`.
+To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.3"}`.
 
     {deps, [{gen_pnet, "0.1.3"}]}.
 
@@ -32,7 +32,7 @@ To integrate `gen_pnet` into a rebar3 managed project change the `deps` entry in
 
 ### Defining a Petri net
 
-Petri nets are defined by creating a callback module that implements the `gen_pnet` behavior by providing a number of callback functions.
+Petri nets are defined by creating a callback module that implements the gen_pnet behavior by providing a number of callback functions.
 
 ### Callback Functions for the Net Structure
 
@@ -116,7 +116,7 @@ In addition to the structure callback functions there are another six callback f
 
 #### code_change/3
 
-The `code_change/3` function determines what happens when a hot code reload appears. This callback is identical to the `code_change/3` function in the `gen_server` behavior.
+The `code_change/3` function determines what happens when a hot code reload appears. This callback is identical to the `code_change/3` function in the gen_server behavior.
 
     code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
 
@@ -156,7 +156,7 @@ Here, we just ignore any message.
 
 #### terminate/2
 
-The `terminate/2` function determines what happens when the net instance is stopped. The first argument is the reason for termination while the second argument is a `#net_state{}` record instance. This callback is identical to the `terminate/2` function in the `gen_server` behavior.
+The `terminate/2` function determines what happens when the net instance is stopped. The first argument is the reason for termination while the second argument is a `#net_state{}` record instance. This callback is identical to the `terminate/2` function in the gen_server behavior.
 
     terminate( _Reason, _NetState ) -> ok.
 
@@ -176,12 +176,12 @@ In the following we demonstrate how to start and play with the previously define
     cd gen_pnet_examples
     rebar3 shell
 
-Compiling with rebar3 also fetches the `gen_pnet` library. We start the cookie vending machine which is stored in the callback module `src/cmv.erl` by using `gen_pnet:start_link/2`.
+Compiling with rebar3 also fetches the gen_pnet library. We start the cookie vending machine which is stored in the callback module `src/cmv.erl` by using `gen_pnet:start_link/2`.
 
     {ok, Pid} = gen_pnet:start_link( cvm, [] ).
     {ok, <0.115.0>}
 
- The first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the `gen_pnet` behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. On success, `gen_pnet:start_link/2` returns the process id of the just created Petri net process. Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
+ The first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the gen_pnet behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. On success, `gen_pnet:start_link/2` returns the process id of the just created Petri net process. Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
 
     gen_pnet:ls( Pid, storage ).
     {ok,[cookie_box,cookie_box,cookie_box]}
@@ -225,7 +225,7 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
 
 ## Resources
 
-- [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples). A collection of examples using `gen_pnet`.
+- [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples). A collection of examples using gen_pnet.
 - [aabs/gen_pn](https://github.com/aabs/gen_pn). An alternative Erlang/OTP compatible Petri net library.
 
 ## Authors
