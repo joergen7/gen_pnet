@@ -256,6 +256,26 @@ cast( Name, Request ) ->
 reply( Client, Reply ) when is_tuple( Client ) ->
   gen_server:reply( Client, Reply ).
 
+
+%%====================================================================
+%% Helper functions
+%%====================================================================
+
+%% @doc Lists the tokens on a given place from a net state.
+%%
+%%      Throws an error if the list does not exist.
+-spec ls_place( Place :: atom(), NetState :: #net_state{} ) -> [_].
+
+ls_place( Place, #net_state{ marking = Marking } ) ->
+  maps:get( Place, Marking ).
+
+
+-spec get_usr_info( NetState :: #net_state{} ) -> _.
+
+get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
+  UsrInfo.
+
+
 %%====================================================================
 %% Generic server callback functions
 %%====================================================================
@@ -436,24 +456,6 @@ init( {IfaceMod, Args} ) ->
 terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   IfaceMod:terminate( Reason, NetState ).
   
-%%====================================================================
-%% Helper functions
-%%====================================================================
-
-%% @doc Lists the tokens on a given place from a net state.
-%%
-%%      Throws an error if the list does not exist.
--spec ls_place( Place :: atom(), NetState :: #net_state{} ) -> [_].
-
-ls_place( Place, #net_state{ marking = Marking } ) ->
-  maps:get( Place, Marking ).
-
-
--spec get_usr_info( NetState :: #net_state{} ) -> _.
-
-get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
-  UsrInfo.
-
 
 %%====================================================================
 %% Internal functions
