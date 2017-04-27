@@ -33,8 +33,11 @@
 %% -------------------------------------------------------------------
 
 -module( gen_pnet ).
-
 -behaviour( gen_server ).
+
+%%====================================================================
+%% Exports
+%%====================================================================
 
 % API functions
 -export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
@@ -47,7 +50,29 @@
 % Helper functions
 -export( [ls_place/2, get_usr_info/1] ).
 
+%%====================================================================
+%% Includes
+%%====================================================================
+
 -include( "gen_pnet.hrl" ).
+
+%%====================================================================
+%% Type definitions
+%%====================================================================
+
+-type name() :: atom()
+              | {atom(), atom()}
+              | {global, _}
+              | {via, atom(), _}
+              | pid().
+
+-type server_name() :: {local, atom()}
+                     | {global, atom()}
+                     | {via, atom(), _}.
+
+-type result() :: {ok, pid()}
+                | ignore
+                | {error, _}.
 
 %%====================================================================
 %% Callback definitions
@@ -111,6 +136,8 @@
 %%
 %% @see start_link/2
 %% @see start_link/3
+-spec new( NetMod :: atom(), UsrInfo :: _ ) -> #net_state{}.
+
 new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
   #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
 
@@ -123,6 +150,11 @@ new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
 %%      handed down to `gen_server:start_link/3' as is.
 %%
 %% @see new/3
+-spec start_link( IfaceMod, Args, Options ) -> result()
+when IfaceMod :: atom(),
+     Args     :: _,
+     Options  :: proplists:proplist().
+
 start_link( IfaceMod, Args, Options )
 when is_atom( IfaceMod ), is_list( Options ) ->
   gen_server:start_link( ?MODULE, {IfaceMod, Args}, Options ).
@@ -135,67 +167,91 @@ when is_atom( IfaceMod ), is_list( Options ) ->
 %%      `gen_server:start_link/4' as is.
 %%
 %% @see new/3
+-spec start_link( ServerName, IfaceMod, Args, Options ) -> result()
+when ServerName :: server_name(),
+     IfaceMod   :: atom(),
+     Args       :: _,
+     Options    :: proplists:proplist().
+
 start_link( ServerName, IfaceMod, Args, Options )
 when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
   gen_server:start_link( ServerName, ?MODULE, {IfaceMod, Args}, Options ).
 
-%% @doc Requests the net instance under process id `Pid' to list all
+%% @doc Requests the net instance under process id `Name' to list all
 %%      tokens on the place named `Place'.
 %%
-%%      Herein, `Pid' can also be a registered process name. The return value is
+%%      Herein, `Name' can also be a registered process name. The return value is
 %%      either `{ok, [_]}'' if the place exists or a `{error, #bad_place{}}'
 %%      tuple.
-ls( Pid, Place ) when is_atom( Place ) ->
-  gen_server:call( Pid, {ls, Place} ).
+-spec ls( Name, Place ) -> {ok, [_]} | {error, #bad_place{}}
+when Name  :: name(),
+     Place :: atom().
 
-%% @doc Requests the net instance under process id `Pid' to return a
+ls( Name, Place ) when is_atom( Place ) -> gen_server:call( Name, {ls, Place} ).
+
+%% @doc Requests the net instance under process id `Name' to return a
 %%      marking map, associating to each place name the list of tokens that this
 %%      place holds.
 %%
-%%      Herein, `Pid' can also be a registered process name. The return value is
-%%      just the plain map.
-marking( Pid ) ->
-  gen_server:call( Pid, marking ).
+%%      Herein, `Name' can also be a registered process name. The return value
+%%      is the Petri net's marking map.
+-spec marking( Name :: name() ) -> #{ atom() => [_] }.
 
-usr_info( Pid ) ->
-  gen_server:call( Pid, usr_info ).
+marking( Name ) -> gen_server:call( Name, marking ).
 
-%% @doc Requests the net instance under process id `Pid' to return the
+
+-spec usr_info( Name :: name() ) -> _.
+
+usr_info( Name ) -> gen_server:call( Name, usr_info ).
+
+%% @doc Requests the net instance under process id `Name' to return the
 %%      throughput of the net.
 %%
 %%      The throughput is given as a `#stats{}' record consisting of three
 %%      `#stat{}' record instances characterizing the current, maximum, and
 %%      minimum throughput of this net in transition firings per second.
-get_stats( Pid ) ->
-  gen_server:call( Pid, get_stats ).
+-spec get_stats( Name :: name() ) -> #stats{}.
 
-%% @doc Requests the net instance under process id `Pid' to clear its stats.
-reset_stats( Pid ) ->
-  gen_server:call( Pid, reset_stats ).
+get_stats( Name ) -> gen_server:call( Name, get_stats ).
 
-%% @doc Signal the net instance under process id `Pid' to stop.
-stop( Pid ) ->
-  gen_server:stop( Pid ).
+%% @doc Requests the net instance under process id `Name' to clear its stats.
+-spec reset_stats( Name :: name() ) -> ok.
+
+reset_stats( Name ) -> gen_server:call( Name, reset_stats ).
+
+%% @doc Signal the net instance under process id `Name' to stop.
+-spec stop( Name :: name() ) -> ok.
+
+stop( Name ) -> gen_server:stop( Name ).
 
 %% @doc Send the request term `Request' to the net instance under process id
-%%      `Pid' and return the reply.
+%%      `Name' and return the reply.
 %%
 %%      The request is handled by the `handle_call/3' callback function of the
 %%      interface module.
-call( Pid, Request ) ->
-  gen_server:call( Pid, {call, Request} ).
+-spec call( Name :: name(), Request :: _ ) -> _.
 
-call( Pid, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
-  gen_server:call( Pid, {call, Request}, Timeout ).
+call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
+
+
+-spec call( Name :: name(), Request :: _, Timeout :: non_neg_integer() ) -> _.
+
+call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
+  gen_server:call( Name, {call, Request}, Timeout ).
 
 %% @doc Send the request term `Request' asynchronously to the net instance under
-%%      process id `Pid'.
+%%      process id `Name'.
 %%
 %%      The request is handled by the `handle_cast/2' callback function of the
 %%      interface module. Note that the cast succeeds even if a non-existing
 %%      process is addressed or the net instance is down.
-cast( Pid, Request ) ->
-  gen_server:cast( Pid, {cast, Request} ).
+-spec cast( Name :: name(), Request :: _ ) -> ok.
+
+cast( Name, Request ) ->
+  gen_server:cast( Name, {cast, Request} ).
+
+
+-spec reply( Client :: {pid(), _}, Reply :: _ ) -> _.
 
 reply( Client, Reply ) when is_tuple( Client ) ->
   gen_server:reply( Client, Reply ).
@@ -387,12 +443,13 @@ terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 %% @doc Lists the tokens on a given place from a net state.
 %%
 %%      Throws an error if the list does not exist.
--spec ls_place( _, #net_state{} ) -> [_].
+-spec ls_place( Place :: atom(), NetState :: #net_state{} ) -> [_].
 
 ls_place( Place, #net_state{ marking = Marking } ) ->
   maps:get( Place, Marking ).
 
--spec get_usr_info( #net_state{} ) -> _.
+
+-spec get_usr_info( NetState :: #net_state{} ) -> _.
 
 get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
   UsrInfo.
@@ -403,13 +460,19 @@ get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
 %%====================================================================
 
 %% @doc Produce the tokens on the places as described in the `ProdMap' argument
-%%      atomically in the net instance under process id `Pid'.
+%%      atomically in the net instance under process id `Name'.
 %%
 %%      Note that production succeeds even if a non-existing process is
 %%      addressed or the net instance is down.
-produce( Pid, ProdMap ) ->
-  gen_server:cast( Pid, {produce, ProdMap} ).
+-spec produce( Name :: name(), ProdMap :: #{ atom() => [_] } ) -> ok.
 
+produce( Name, ProdMap ) ->
+  gen_server:cast( Name, {produce, ProdMap} ).
+
+
+-spec handle_trigger( ProdMap, NetState ) -> #net_state{}
+when ProdMap  :: #{ atom() => [_] },
+     NetState :: #net_state{}.
 
 handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
@@ -431,9 +494,9 @@ handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   prd( ProdMap1, NetState ).
 
 
-
-
--spec cns( #{ atom() => [_] }, #net_state{} ) -> _.
+-spec cns( Mode, NetState ) -> #net_state{}
+when Mode     :: #{ atom() => [_] },
+     NetState :: #net_state{}.
 
 cns( Mode, NetState = #net_state{ marking = Marking } ) ->
 
@@ -443,7 +506,10 @@ cns( Mode, NetState = #net_state{ marking = Marking } ) ->
 
   NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
--spec prd( _, #net_state{} ) -> _.
+
+-spec prd( ProdMap, NetState ) -> #net_state{}
+when ProdMap  :: #{ atom() => [_] },
+     NetState :: #net_state{}.
 
 prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
 
@@ -453,7 +519,8 @@ prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
 
   NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
 
--spec progress( #net_state{} ) ->
+
+-spec progress( NetState :: #net_state{} ) ->
         abort | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
 
 progress( #net_state{ marking  = Marking,
@@ -481,7 +548,10 @@ progress( #net_state{ marking  = Marking,
   attempt_progress( ModeMap, NetMod, UsrInfo ).
 
 
--spec attempt_progress( map(), atom(), _ ) -> abort | {delta, _, _}.
+-spec attempt_progress( ModeMap, NetMod, UsrInfo ) -> abort | {delta, _, _}
+when ModeMap :: #{ atom() => [_] },
+     NetMod  :: atom(),
+     UsrInfo :: _.
 
 attempt_progress( ModeMap, NetMod, UsrInfo ) ->
 
@@ -513,7 +583,9 @@ attempt_progress( ModeMap, NetMod, UsrInfo ) ->
   end.
 
 
--spec enum_mode( [_], _ ) -> _.
+-spec enum_mode( Preset, Marking ) -> [#{ atom() => [_] }]
+when Preset  :: [atom()],
+     Marking :: #{ atom() => [_] }.
 
 enum_mode( Preset, Marking ) ->
 
