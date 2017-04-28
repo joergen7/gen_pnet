@@ -89,8 +89,8 @@ Here, we define the preset of the transition `a` to be just the place `coin_slot
 The `init_marking/2` function lets us define the initial marking for a given place in the form of a token list.
 
 ```erlang
-init_marking( storage, _ ) -> [cookie_box, cookie_box, cookie_box];
-init_marking( _, _ )       -> [].
+init_marking( storage, _UsrInfo ) -> [cookie_box, cookie_box, cookie_box];
+init_marking( _Place, _UsrInfo )  -> [].
 ```
 
 Here, we initialize the storage place with three `cookie_box` tokens. All other places are left empty.
@@ -102,7 +102,7 @@ The `is_enabled/2` function is a predicate determining whether a given transitio
 ```erlang
 is_enabled( a, #{ coin_slot := [coin] } )                      -> true;
 is_enabled( b, #{ signal := [sig], storage := [cookie_box] } ) -> true;
-is_enabled( _, _ )                                             -> false.
+is_enabled( _Trsn, _Mode )                                     -> false.
 ```
 
 Here, we state that the transition `a` is enabled if it can consume a single `coin` from the `coin_slot` place. Similarly, the transition `b` is enabled if it can consume a `sig` token from the `signal` place and a `cookie_box` token from the `storage` place. No other configuration can enable a transition. E.g., managing to get a `button` token on the `coin_slot` place will not enable any transition.
@@ -112,8 +112,11 @@ Here, we state that the transition `a` is enabled if it can consume a single `co
 The `fire/3` function defines what tokens are produced when a given transition fires in a given mode. As arguments it takes the name of the transition, and a firing mode in the form of a hash map mapping place names to token lists. The `fire/3` function is called only on modes for which `is_enabled/2` returns `true`. The `fire/3` function is expected to return either a `{produce, ProduceMap}` tuple or the term `abort`. If `abort` is returned, the firing is aborted. Nothing is produced or consumed.
 
 ```erlang
-fire( a, _, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
-fire( b, _, _ ) -> {produce, #{ compartment => [cookie_box] }}.
+fire( a, _Mode, _UsrInfo ) ->
+  {produce, #{ cash_box => [coin], signal => [sig] }};
+
+fire( b, _Mode, _UsrInfo ) ->
+  {produce, #{ compartment => [cookie_box] }}.
 ```
 
 Here, the firing of the transition `a` produces a `coin` token on the `cash_box` place and a `sig` token on the `signal` place. Similarly, the firing of the transition `b` produces a `cookie_box` token on the `compartment` place. We do not need to state the tokens to be consumed because the firing mode already uniquely identifies the tokens to be consumed.
@@ -144,20 +147,20 @@ code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
 The `handle_call/3` function performs a synchronous exchange of messages between the caller and the net instance. The first argument is the request message, the second argument is a tuple identifying the caller, and the third argument is a `#net_state{}` record instance describing the current state of the net. The `handle_call/3` function can either generate a reply without changing the net marking by returning a `{reply, Reply}` tuple or it can generate a reply, consuming or producing tokens by returning a `{reply, Reply, ConsumeMap, ProduceMap}` tuple.
 
 ```erlang
-handle_call( insert_coin, _, _ ) ->
+handle_call( insert_coin, _From, _NetState ) ->
   {reply, ok, #{}, #{ coin_slot => [coin] }};
 
-handle_call( remove_cookie_box, _, NetState ) ->
+handle_call( remove_cookie_box, _From, NetState ) ->
 
-  case gen_pnet:ls_place( compartment, NetState ) of
+  case gen_pnet:get_ls( compartment, NetState ) of
     []    -> {reply, {error, empty_compartment}};
     [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
   end;
 
-handle_call( _, _, _ ) -> {reply, {error, bad_msg}}.
+handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
 ```
 
-Here, we react to two kinds of messages: Inserting a coin in the coin slot and removing a cookie box from the compartment. Thus, we react to an `insert_coin` message by replying with `ok`, consuming nothing and producing a `coin` token on the `coin_slot` place. When receiving a `remove_cookie_box` message, we check whether the `compartment` place is empty, replying with an error message if it is, otherwise replying with `ok`, consuming one `cookie_box` token from the `compartment` place, and producing nothing. We can inspect the tokens on a given place by using the `ls_place/2` helper function. Calls that are neither `insert_coin` nor `remove_cookie_box` are responded to with an error message.
+Here, we react to two kinds of messages: Inserting a coin in the coin slot and removing a cookie box from the compartment. Thus, we react to an `insert_coin` message by replying with `ok`, consuming nothing and producing a `coin` token on the `coin_slot` place. When receiving a `remove_cookie_box` message, we check whether the `compartment` place is empty, replying with an error message if it is, otherwise replying with `ok`, consuming one `cookie_box` token from the `compartment` place, and producing nothing. We can inspect the tokens on a given place by using the `get_ls/2` accessor function. Calls that are neither `insert_coin` nor `remove_cookie_box` are responded to with an error message.
 
 #### handle_cast/2
 
@@ -181,6 +184,12 @@ Here, we just ignore any message.
 
 #### init/1
 
+The `init/1` function initializes the net instance. It is given a start argument term which is the start argument term that was provided with `gen_pnet:start_link/3`. As a return value a tuple of the form `{ok, #net_state{}}` is expected. We can construct it with the help of `gen_pnet:new/2`. This function takes two arguments: The module implementing the net structure callback functions as well as a user-defined info field which we initialize with the empty list `[]`.
+
+```erlang
+init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
+```
+
 #### terminate/2
 
 The `terminate/2` function determines what happens when the net instance is stopped. The first argument is the reason for termination while the second argument is a `#net_state{}` record instance. This callback is identical to the `terminate/2` function in the gen_server behavior.
@@ -194,7 +203,7 @@ terminate( _Reason, _NetState ) -> ok.
 The `trigger/3` function determines what happens when a token is produced on a given place. Its first argument is the place name and its second argument is the token about to be produced. The `trigger/3` function is expected to return either `pass` in which case the token is produced normally, or `drop` in which case the token is forgotten.
 
 ```erlang
-trigger( _, _ ) -> pass.
+trigger( _Place, _Token, _UsrInfo ) -> pass.
 ```
 
 Here, we simply let any token pass.
@@ -207,12 +216,12 @@ In the following we demonstrate how to start and play with the previously define
     cd gen_pnet_examples
     rebar3 shell
 
-Compiling with rebar3 also fetches the gen_pnet library. We start the cookie vending machine which is stored in the callback module `src/cmv.erl` by using `gen_pnet:start_link/2`.
+Compiling with rebar3 also fetches the gen_pnet library. We start the cookie vending machine which is stored in the callback module `src/cmv.erl` by using `gen_pnet:start_link/3`.
 
-    {ok, Pid} = gen_pnet:start_link( cvm, [] ).
+    {ok, Pid} = gen_pnet:start_link( cvm, [], [] ).
     {ok, <0.115.0>}
 
- The first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the gen_pnet behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. On success, `gen_pnet:start_link/2` returns the process id of the just created Petri net process. Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
+ The first argument is the callback module defining the cookie vending machine. It must implement all callback functions in the gen_pnet behavior. The second argument is an option list, identical to the one used in the `gen_server:start_link/n` functions. On success, `gen_pnet:start_link/3` returns the process id of the just created Petri net process. Now that the Petri net is running we can query the content of its places with `gen_pnet:ls/2`. This Petri net has five places: `coin_slot`, `cash_box`, `signal`, `compartment`, and `storage`. Initially, all places are empty except the `storage` place which holds three cookie packages.
 
     gen_pnet:ls( Pid, storage ).
     {ok,[cookie_box,cookie_box,cookie_box]}
