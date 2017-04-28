@@ -41,14 +41,14 @@
 
 % API functions
 -export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
-          cast/2, get_stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
+          cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
 
 % gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
 
 % Helper functions
--export( [ls_place/2, get_usr_info/1] ).
+-export( [get_ls/2, get_usr_info/1, get_stats/1] ).
 
 %%====================================================================
 %% Includes
@@ -78,7 +78,7 @@
                              | marking
                              | usr_info
                              | {call, _}
-                             | get_stats
+                             | stats
                              | reset_stats.
 
 -type handle_call_result() :: {reply, _, #net_state{}}
@@ -231,9 +231,9 @@ usr_info( Name ) -> gen_server:call( Name, usr_info ).
 %%      The throughput is given as a `#stats{}' record consisting of three
 %%      `#stat{}' record instances characterizing the current, maximum, and
 %%      minimum throughput of this net in transition firings per second.
--spec get_stats( Name :: name() ) -> #stats{}.
+-spec stats( Name :: name() ) -> #stats{}.
 
-get_stats( Name ) -> gen_server:call( Name, get_stats ).
+stats( Name ) -> gen_server:call( Name, stats ).
 
 %% @doc Requests the net instance under process id `Name' to clear its stats.
 -spec reset_stats( Name :: name() ) -> ok.
@@ -285,16 +285,19 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 %% @doc Lists the tokens on a given place from a net state.
 %%
 %%      Throws an error if the list does not exist.
--spec ls_place( Place :: atom(), NetState :: #net_state{} ) -> [_].
+-spec get_ls( Place :: atom(), NetState :: #net_state{} ) -> [_].
 
-ls_place( Place, #net_state{ marking = Marking } ) ->
-  maps:get( Place, Marking ).
+get_ls( Place, #net_state{ marking = Marking } ) -> maps:get( Place, Marking ).
 
 
 -spec get_usr_info( NetState :: #net_state{} ) -> _.
 
-get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
-  UsrInfo.
+get_usr_info( #net_state{ usr_info = UsrInfo } ) -> UsrInfo.
+
+
+-spec get_stats( NetState :: #net_state{} ) -> #stats{}.
+
+get_stats( #net_state{ stats = Stats } ) -> Stats.
 
 
 %%====================================================================
@@ -358,7 +361,7 @@ handle_call( {call, Request}, From,
 
   end;
 
-handle_call( get_stats, _From, NetState = #net_state{ stats = Stats } ) ->
+handle_call( stats, _From, NetState = #net_state{ stats = Stats } ) ->
   {reply, Stats, NetState};
 
 handle_call( reset_stats, _From, NetState ) ->
