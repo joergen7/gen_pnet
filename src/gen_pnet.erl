@@ -307,7 +307,7 @@ get_stats( #net_state{ stats = Stats } ) -> Stats.
 %%====================================================================
 
 %% @private
--spec code_change( OldVsn, NetState, Extra ) -> _
+-spec code_change( OldVsn, NetState, Extra ) -> {ok, #net_state{}} | {error, _}
 when OldVsn   :: _,
      NetState :: #net_state{},
      Extra    :: _.
