@@ -24,11 +24,15 @@ This section shows how the gen_pnet library can be added to your project, how Pe
 
 To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.3"}`.
 
-    {deps, [{gen_pnet, "0.1.3"}]}.
+```erlang
+{deps, [{gen_pnet, "0.1.3"}]}.
+```
 
 #### mix
 
-    {:gen_pnet, "~> 0.1.3"}
+```elixir
+{:gen_pnet, "~> 0.1.3"}
+```
 
 ### Defining a Petri net
 
@@ -51,8 +55,10 @@ We have a look at each of them in turn.
 
 The `place_lst/0` function lets us define the names of all places in the net.
 
-    place_lst() ->
-      [coin_slot, cash_box, signal, storage, compartment].
+```erlang
+place_lst() ->
+  [coin_slot, cash_box, signal, storage, compartment].
+```
 
 Here, we define the net to have the five places in the cookie vending machine.
 
@@ -60,8 +66,10 @@ Here, we define the net to have the five places in the cookie vending machine.
 
 The `trsn_lst/0` function lets us define the names of all transitions in the net.
 
-    trsn_lst() ->
-      [a, b].
+```erlang
+trsn_lst() ->
+  [a, b].
+```
 
 Here, we define the net to have the two places `a` and `b` in the cookie vending machine.
 
@@ -69,8 +77,10 @@ Here, we define the net to have the two places `a` and `b` in the cookie vending
 
 The `preset/1` lets us define the preset places of a given transition.
 
-    preset( a ) -> [coin_slot];
-    preset( b ) -> [signal, storage].
+```erlang
+preset( a ) -> [coin_slot];
+preset( b ) -> [signal, storage].
+```
 
 Here, we define the preset of the transition `a` to be just the place `coin_slot` while the transition `b` has the places `signal` and `storage` in its preset.
 
@@ -78,8 +88,10 @@ Here, we define the preset of the transition `a` to be just the place `coin_slot
 
 The `init_marking/1` function lets us define the initial marking for a given place in the form of a token list.
 
-    init_marking( storage ) -> [cookie_box, cookie_box, cookie_box];
-    init_marking( _ )       -> [].
+```erlang
+init_marking( storage ) -> [cookie_box, cookie_box, cookie_box];
+init_marking( _ )       -> [].
+```
 
 Here, we initialize the storage place with three `cookie_box` tokens. All other places are left empty.
 
@@ -87,9 +99,11 @@ Here, we initialize the storage place with three `cookie_box` tokens. All other 
 
 The `is_enabled/2` function is a predicate determining whether a given transition is enabled in a given mode.
 
-    is_enabled( a, #{ coin_slot := [coin] } )                      -> true;
-    is_enabled( b, #{ signal := [sig], storage := [cookie_box] } ) -> true;
-    is_enabled( _, _ )                                             -> false.
+```erlang
+is_enabled( a, #{ coin_slot := [coin] } )                      -> true;
+is_enabled( b, #{ signal := [sig], storage := [cookie_box] } ) -> true;
+is_enabled( _, _ )                                             -> false.
+```
 
 Here, we state that the transition `a` is enabled if it can consume a single `coin` from the `coin_slot` place. Similarly, the transition `b` is enabled if it can consume a `sig` token from the `signal` place and a `cookie_box` token from the `storage` place. No other configuration can enable a transition. E.g., managing to get a `button` token on the `coin_slot` place will not enable any transition.
 
@@ -97,8 +111,10 @@ Here, we state that the transition `a` is enabled if it can consume a single `co
 
 The `fire/2` function defines what tokens are produced when a given transition fires in a given mode. As arguments it takes the name of the transition, and a firing mode in the form of a hash map mapping place names to token lists. The `fire/2` function is called only on modes for which `is_enabled/2` returns `true`. The `fire/2` function is expected to return either a `{produce, ProduceMap}` tuple or the term `abort`. If `abort` is returned, the firing is aborted. Nothing is produced or consumed.
 
-    fire( a, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
-    fire( b, _ ) -> {produce, #{ compartment => [cookie_box] }}.
+```erlang
+fire( a, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
+fire( b, _ ) -> {produce, #{ compartment => [cookie_box] }}.
+```
 
 Here, the firing of the transition `a` produces a `coin` token on the `cash_box` place and a `sig` token on the `signal` place. Similarly, the firing of the transition `b` produces a `cookie_box` token on the `compartment` place. We do not need to state the tokens to be consumed because the firing mode already uniquely identifies the tokens to be consumed.
 
@@ -118,23 +134,27 @@ In addition to the structure callback functions there are another six callback f
 
 The `code_change/3` function determines what happens when a hot code reload appears. This callback is identical to the `code_change/3` function in the gen_server behavior.
 
-    code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
+```erlang
+code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
+```
 
 #### handle_call/3
 
 The `handle_call/3` function performs a synchronous exchange of messages between the caller and the net instance. The first argument is the request message, the second argument is a tuple identifying the caller, and the third argument is a `#net_state{}` record instance describing the current state of the net. The `handle_call/3` function can either generate a reply without changing the net marking by returning a `{reply, Reply}` tuple or it can generate a reply, consuming or producing tokens by returning a `{reply, Reply, ConsumeMap, ProduceMap}` tuple.
 
-    handle_call( insert_coin, _, _ ) ->
-      {reply, ok, #{}, #{ coin_slot => [coin] }};
+```erlang
+handle_call( insert_coin, _, _ ) ->
+  {reply, ok, #{}, #{ coin_slot => [coin] }};
 
-    handle_call( remove_cookie_box, _, NetState ) ->
+handle_call( remove_cookie_box, _, NetState ) ->
 
-      case gen_pnet:ls_place( compartment, NetState ) of
-        []    -> {reply, {error, empty_compartment}};
-        [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
-      end;
+  case gen_pnet:ls_place( compartment, NetState ) of
+    []    -> {reply, {error, empty_compartment}};
+    [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
+  end;
 
-    handle_call( _, _, _ ) -> {reply, {error, bad_msg}}.
+handle_call( _, _, _ ) -> {reply, {error, bad_msg}}.
+```
 
 Here, we react to two kinds of messages: Inserting a coin in the coin slot and removing a cookie box from the compartment. Thus, we react to an `insert_coin` message by replying with `ok`, consuming nothing and producing a `coin` token on the `coin_slot` place. When receiving a `remove_cookie_box` message, we check whether the `compartment` place is empty, replying with an error message if it is, otherwise replying with `ok`, consuming one `cookie_box` token from the `compartment` place, and producing nothing. We can inspect the tokens on a given place by using the `ls_place/2` helper function. Calls that are neither `insert_coin` nor `remove_cookie_box` are responded to with an error message.
 
@@ -142,7 +162,9 @@ Here, we react to two kinds of messages: Inserting a coin in the coin slot and r
 
 The `handle_cast/2` function reacts to an asynchronous message received by the net instance. The first argument is the request while the second argument is a `#net_state{}` record instance. The `handle_cast/2` function can either leave the net unchanged by returning `noreply` or it can consume or produce tokens by returning a `{noreply, ConsumeMap, ProduceMap}` tuple.
 
-    handle_cast( _Request, _NetState ) -> noreply.
+```erlang
+handle_cast( _Request, _NetState ) -> noreply.
+```
 
 Here, we just ignore any cast.
 
@@ -150,7 +172,9 @@ Here, we just ignore any cast.
 
 The `handle_info/2` function reacts to an asynchronous, unformatted message received by the net instance. The first argument is the message term while the second argument is a `#net_state{}` record instance. The `handle_info/2` function can either leave the net unchanged by returning `noreply` or it can consume or produce tokens by returning a `{noreply, ConsumeMap, ProduceMap}` tuple.
 
-    handle_info( _Request, _NetState ) -> noreply.
+```erlang
+handle_info( _Request, _NetState ) -> noreply.
+```
 
 Here, we just ignore any message.
 
@@ -158,13 +182,17 @@ Here, we just ignore any message.
 
 The `terminate/2` function determines what happens when the net instance is stopped. The first argument is the reason for termination while the second argument is a `#net_state{}` record instance. This callback is identical to the `terminate/2` function in the gen_server behavior.
 
-    terminate( _Reason, _NetState ) -> ok.
+```erlang
+terminate( _Reason, _NetState ) -> ok.
+```
 
 #### trigger/2
 
 The `trigger/2` function determines what happens when a token is produced on a given place. Its first argument is the place name and its second argument is the token about to be produced. The `trigger/2` function is expected to return either `pass` in which case the token is produced normally, or `drop` in which case the token is forgotten.
 
-    trigger( _, _ ) -> pass.
+```erlang
+trigger( _, _ ) -> pass.
+```
 
 Here, we simply let any token pass.
 
