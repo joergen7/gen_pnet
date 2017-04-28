@@ -44,10 +44,10 @@ There are six callbacks that define the Petri net structure and its initial mark
 
 - `place_lst/0` returns the names of the places in the net
 - `trsn_lst/0` returns the names of the transitions in the net
-- `init_marking/1` returns the initial marking for a given place
+- `init_marking/2` returns the initial marking for a given place
 - `preset/1` returns the preset places of a given transition
 - `is_enabled/2` determines whether a given transition is enabled in a given mode
-- `fire/2` returns which tokens are produced on what places if a given transition is fired in a given mode that enables this transition
+- `fire/3` returns which tokens are produced on what places if a given transition is fired in a given mode that enables this transition
 
 We have a look at each of them in turn.
 
@@ -84,13 +84,13 @@ preset( b ) -> [signal, storage].
 
 Here, we define the preset of the transition `a` to be just the place `coin_slot` while the transition `b` has the places `signal` and `storage` in its preset.
 
-#### init_marking/1
+#### init_marking/2
 
-The `init_marking/1` function lets us define the initial marking for a given place in the form of a token list.
+The `init_marking/2` function lets us define the initial marking for a given place in the form of a token list.
 
 ```erlang
-init_marking( storage ) -> [cookie_box, cookie_box, cookie_box];
-init_marking( _ )       -> [].
+init_marking( storage, _ ) -> [cookie_box, cookie_box, cookie_box];
+init_marking( _, _ )       -> [].
 ```
 
 Here, we initialize the storage place with three `cookie_box` tokens. All other places are left empty.
@@ -107,13 +107,13 @@ is_enabled( _, _ )                                             -> false.
 
 Here, we state that the transition `a` is enabled if it can consume a single `coin` from the `coin_slot` place. Similarly, the transition `b` is enabled if it can consume a `sig` token from the `signal` place and a `cookie_box` token from the `storage` place. No other configuration can enable a transition. E.g., managing to get a `button` token on the `coin_slot` place will not enable any transition.
 
-#### fire/2
+#### fire/3
 
-The `fire/2` function defines what tokens are produced when a given transition fires in a given mode. As arguments it takes the name of the transition, and a firing mode in the form of a hash map mapping place names to token lists. The `fire/2` function is called only on modes for which `is_enabled/2` returns `true`. The `fire/2` function is expected to return either a `{produce, ProduceMap}` tuple or the term `abort`. If `abort` is returned, the firing is aborted. Nothing is produced or consumed.
+The `fire/3` function defines what tokens are produced when a given transition fires in a given mode. As arguments it takes the name of the transition, and a firing mode in the form of a hash map mapping place names to token lists. The `fire/3` function is called only on modes for which `is_enabled/2` returns `true`. The `fire/3` function is expected to return either a `{produce, ProduceMap}` tuple or the term `abort`. If `abort` is returned, the firing is aborted. Nothing is produced or consumed.
 
 ```erlang
-fire( a, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
-fire( b, _ ) -> {produce, #{ compartment => [cookie_box] }}.
+fire( a, _, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
+fire( b, _, _ ) -> {produce, #{ compartment => [cookie_box] }}.
 ```
 
 Here, the firing of the transition `a` produces a `coin` token on the `cash_box` place and a `sig` token on the `signal` place. Similarly, the firing of the transition `b` produces a `cookie_box` token on the `compartment` place. We do not need to state the tokens to be consumed because the firing mode already uniquely identifies the tokens to be consumed.
@@ -127,8 +127,9 @@ In addition to the structure callback functions there are another six callback f
 - `handle_call/3` synchronous message exchange
 - `handle_cast/2` asynchronous message reception
 - `handle_info/2` asynchronous reception of an unformatted message
+- `init/1` initializes the gen_pnet instance
 - `terminate/2` determines what happens when the net instance is stopped
-- `trigger/2` allows to add a side effects to the generation of a token
+- `trigger/3` allows to add a side effects to the generation of a token
 
 #### code_change/3
 
@@ -178,6 +179,8 @@ handle_info( _Request, _NetState ) -> noreply.
 
 Here, we just ignore any message.
 
+#### init/1
+
 #### terminate/2
 
 The `terminate/2` function determines what happens when the net instance is stopped. The first argument is the reason for termination while the second argument is a `#net_state{}` record instance. This callback is identical to the `terminate/2` function in the gen_server behavior.
@@ -186,9 +189,9 @@ The `terminate/2` function determines what happens when the net instance is stop
 terminate( _Reason, _NetState ) -> ok.
 ```
 
-#### trigger/2
+#### trigger/3
 
-The `trigger/2` function determines what happens when a token is produced on a given place. Its first argument is the place name and its second argument is the token about to be produced. The `trigger/2` function is expected to return either `pass` in which case the token is produced normally, or `drop` in which case the token is forgotten.
+The `trigger/3` function determines what happens when a token is produced on a given place. Its first argument is the place name and its second argument is the token about to be produced. The `trigger/3` function is expected to return either `pass` in which case the token is produced normally, or `drop` in which case the token is forgotten.
 
 ```erlang
 trigger( _, _ ) -> pass.
