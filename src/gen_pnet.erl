@@ -43,12 +43,13 @@
 -export( [start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
           cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
 
+% Net state constructor and accessor functions
+-export( [new/2, get_ls/2, get_usr_info/1, get_stats/1] ).
+
 % gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
           init/1, terminate/2] ).
 
-% Helper functions
--export( [new/2, get_ls/2, get_usr_info/1, get_stats/1] ).
 
 %%====================================================================
 %% Includes
@@ -267,7 +268,7 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 
 
 %%====================================================================
-%% Helper functions
+%% Net state constructor and accessor functions
 %%====================================================================
 
 %% @doc Generates an initial instance of a state record.
