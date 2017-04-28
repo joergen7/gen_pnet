@@ -40,7 +40,7 @@
 %%====================================================================
 
 % API functions
--export( [new/2, start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
+-export( [start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
           cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
 
 % gen_server callbacks
@@ -48,7 +48,7 @@
           init/1, terminate/2] ).
 
 % Helper functions
--export( [get_ls/2, get_usr_info/1, get_stats/1] ).
+-export( [new/2, get_ls/2, get_usr_info/1, get_stats/1] ).
 
 %%====================================================================
 %% Includes
@@ -149,18 +149,6 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-
-%% @doc Generates an initial instance of a state record.
-%%
-%%      Such a state record can be used to initialize a `gen_pnet' instance with
-%%      `start_link/1' or `start_link/2'.
-%%
-%% @see start_link/2
-%% @see start_link/3
--spec new( NetMod :: atom(), UsrInfo :: _ ) -> #net_state{}.
-
-new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
-  #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
 
 %% @doc Starts an unregistered net instance.
 %%
@@ -281,6 +269,19 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 %%====================================================================
 %% Helper functions
 %%====================================================================
+
+%% @doc Generates an initial instance of a state record.
+%%
+%%      Such a state record can be used to initialize a `gen_pnet' instance with
+%%      `start_link/1' or `start_link/2'.
+%%
+%% @see start_link/2
+%% @see start_link/3
+-spec new( NetMod :: atom(), UsrInfo :: _ ) -> #net_state{}.
+
+new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
+  #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
+
 
 %% @doc Lists the tokens on a given place from a net state.
 %%
