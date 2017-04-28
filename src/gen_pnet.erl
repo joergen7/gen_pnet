@@ -70,9 +70,30 @@
                      | {global, atom()}
                      | {via, atom(), _}.
 
--type result() :: {ok, pid()}
+-type start_link_result() :: {ok, pid()}
                 | ignore
                 | {error, _}.
+
+-type handle_call_request() :: {ls, atom()}
+                             | marking
+                             | usr_info
+                             | {call, _}
+                             | get_stats
+                             | reset_stats.
+
+-type handle_call_result() :: {reply, _, #net_state{}}
+                            | {noreply, #net_state{}}
+                            | {stop, _, _, #net_state{}}.
+
+
+-type handle_cast_request() :: {produce, #{ atom() => [_] }}
+                             | {cast, _}.
+
+-type handle_cast_result() :: {noreply, #net_state{}}
+                            | {stop, _, #net_state{}}.
+
+-type handle_info_result() :: {noreply, #net_state{}}
+                            | {stop, _, #net_state{}}.
 
 %%====================================================================
 %% Callback definitions
@@ -150,7 +171,7 @@ new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
 %%      handed down to `gen_server:start_link/3' as is.
 %%
 %% @see new/3
--spec start_link( IfaceMod, Args, Options ) -> result()
+-spec start_link( IfaceMod, Args, Options ) -> start_link_result()
 when IfaceMod :: atom(),
      Args     :: _,
      Options  :: proplists:proplist().
@@ -167,7 +188,7 @@ when is_atom( IfaceMod ), is_list( Options ) ->
 %%      `gen_server:start_link/4' as is.
 %%
 %% @see new/3
--spec start_link( ServerName, IfaceMod, Args, Options ) -> result()
+-spec start_link( ServerName, IfaceMod, Args, Options ) -> start_link_result()
 when ServerName :: server_name(),
      IfaceMod   :: atom(),
      Args       :: _,
@@ -281,11 +302,21 @@ get_usr_info( #net_state{ usr_info = UsrInfo } ) ->
 %%====================================================================
 
 %% @private
+-spec code_change( OldVsn, NetState, Extra ) -> _
+when OldVsn   :: _,
+     NetState :: #net_state{},
+     Extra    :: _.
+
 code_change( OldVsn, NetState = #net_state{ iface_mod = IfaceMod }, Extra ) ->
   IfaceMod:code_change( OldVsn, NetState, Extra ).
 
 
 %% @private
+-spec handle_call( Request, From, NetState ) -> handle_call_result()
+when Request  :: handle_call_request(),
+     From     :: {pid(), _},
+     NetState :: #net_state{}.
+
 handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
 
   Reply = case maps:is_key( Place, Marking ) of
@@ -335,6 +366,10 @@ handle_call( reset_stats, _From, NetState ) ->
 
 
 %% @private
+-spec handle_cast( Request, NetState ) -> handle_cast_result()
+when Request  :: handle_cast_request(),
+     NetState :: #net_state{}.
+
 handle_cast( {produce, ProdMap},
              NetState = #net_state{ stats  = Stats,
                                     tstart = T1,
@@ -411,6 +446,10 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
+-spec handle_info( Info, NetState ) -> handle_info_result()
+when Info     :: _,
+     NetState :: #net_state{}.
+
 handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
   case IfaceMod:handle_info( Info, NetState ) of
@@ -430,6 +469,8 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
+-spec init( Args :: {atom(), _} ) -> {ok, #net_state{}}.
+
 init( {IfaceMod, Args} ) ->
 
   {ok, NetState} = IfaceMod:init( Args ),
@@ -453,6 +494,8 @@ init( {IfaceMod, Args} ) ->
 
 
 %% @private
+-spec terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+
 terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
   IfaceMod:terminate( Reason, NetState ).
   
