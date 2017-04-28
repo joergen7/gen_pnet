@@ -152,14 +152,7 @@
 %%====================================================================
 
 %% @doc Starts an unregistered net instance.
-%%
-%%      The `gen_pnet' instance can be initialized with either the callback
-%%      module name `Mod', implementing all callback functions or with a
-%%      `#net_state{}' record instance. Such a `#net_state{}' record can be
-%%      generated using the `new/3' function. The option list `Options' is
-%%      handed down to `gen_server:start_link/3' as is.
-%%
-%% @see new/3
+%% @see start_link/4
 -spec start_link( IfaceMod, Args, Options ) -> start_link_result()
 when IfaceMod :: atom(),
      Args     :: _,
@@ -169,14 +162,16 @@ start_link( IfaceMod, Args, Options )
 when is_atom( IfaceMod ), is_list( Options ) ->
   gen_server:start_link( ?MODULE, {IfaceMod, Args}, Options ).
 
-%% @doc Starts a net instance registered to `ServerName' using the callback
-%%      module `Mod' or a `#net_state' record instance which can be created
-%%      using `new/3'. Herein, the `ServerName' argument can be
-%%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. The server
-%%      name `ServerName' and option list `Options' are handed down to
-%%      `gen_server:start_link/4' as is.
+%% @doc Starts a net instance registered as `ServerName' using the callback
+%%      module `IfaceMod' as the interface module for this net instance.
 %%
-%% @see new/3
+%%      The `Args' argument is later handed to the `init/1' callback. The
+%%      `ServerName' argument can be
+%%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. Internally,
+%%      the server name `ServerName' and option list `Options' are handed down
+%%      to `gen_server:start_link/4' as is.
+%%
+%% @see init/1
 -spec start_link( ServerName, IfaceMod, Args, Options ) -> start_link_result()
 when ServerName :: server_name(),
      IfaceMod   :: atom(),
@@ -187,35 +182,33 @@ start_link( ServerName, IfaceMod, Args, Options )
 when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
   gen_server:start_link( ServerName, ?MODULE, {IfaceMod, Args}, Options ).
 
-%% @doc Requests the net instance under process id `Name' to list all
-%%      tokens on the place named `Place'.
+%% @doc Query the list of tokens on the place named `Place' in the net instance
+%%      identified as `Name'.
 %%
-%%      Herein, `Name' can also be a registered process name. The return value is
-%%      either `{ok, [_]}'' if the place exists or a `{error, #bad_place{}}'
-%%      tuple.
+%%      Herein, `Name' can be a process id or a registered process name. The
+%%      return value is either `{ok, [_]}'' if the place exists or a
+%%      `{error, #bad_place{}}' tuple.
 -spec ls( Name, Place ) -> {ok, [_]} | {error, #bad_place{}}
 when Name  :: name(),
      Place :: atom().
 
 ls( Name, Place ) when is_atom( Place ) -> gen_server:call( Name, {ls, Place} ).
 
-%% @doc Requests the net instance under process id `Name' to return a
-%%      marking map, associating to each place name the list of tokens that this
-%%      place holds.
+%% @doc Query the marking map of the net instance identified as `Name'
+%%      associating to each place name the list of tokens that this place holds.
 %%
-%%      Herein, `Name' can also be a registered process name. The return value
-%%      is the Petri net's marking map.
+%%      Herein, `Name' can be a process id or a registered process name. The
+%%      return value is the Petri net's marking map.
 -spec marking( Name :: name() ) -> #{ atom() => [_] }.
 
 marking( Name ) -> gen_server:call( Name, marking ).
 
-
+%% @doc Query the user info term from the net instance identified as `Name'.
 -spec usr_info( Name :: name() ) -> _.
 
 usr_info( Name ) -> gen_server:call( Name, usr_info ).
 
-%% @doc Requests the net instance under process id `Name' to return the
-%%      throughput of the net.
+%% @doc Query the statistics gathered by the net instance identified as `Name'.
 %%
 %%      The throughput is given as a `#stats{}' record consisting of three
 %%      `#stat{}' record instances characterizing the current, maximum, and
@@ -224,33 +217,39 @@ usr_info( Name ) -> gen_server:call( Name, usr_info ).
 
 stats( Name ) -> gen_server:call( Name, stats ).
 
-%% @doc Requests the net instance under process id `Name' to clear its stats.
+%% @doc Requests the net instance identified as `Name' to clear its stats.
 -spec reset_stats( Name :: name() ) -> ok.
 
 reset_stats( Name ) -> gen_server:call( Name, reset_stats ).
 
-%% @doc Signal the net instance under process id `Name' to stop.
+%% @doc Requests the net instance identified as `Name' to stop.
 -spec stop( Name :: name() ) -> ok.
 
 stop( Name ) -> gen_server:stop( Name ).
 
-%% @doc Send the request term `Request' to the net instance under process id
+
+%% @doc Synchronously send the term `Request' to the net instance identified as
 %%      `Name' and return the reply.
-%%
-%%      The request is handled by the `handle_call/3' callback function of the
-%%      interface module.
+
+%%      The timeout is implicitly set to five seconds.
+%% @see call/3
 -spec call( Name :: name(), Request :: _ ) -> _.
 
 call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
 
 
+%% @doc Synchronously send the term `Request' to the net instance identified as
+%%      `Name' and return the reply.
+%%
+%%      The timeout is explicitly set to `Timeout`. The request is handled by
+%%      the `handle_call/3' callback function of the interface module.
 -spec call( Name :: name(), Request :: _, Timeout :: non_neg_integer() ) -> _.
 
 call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
   gen_server:call( Name, {call, Request}, Timeout ).
 
-%% @doc Send the request term `Request' asynchronously to the net instance under
-%%      process id `Name'.
+%% @doc Asynchronously send the term `Request' to the net instance identified as
+%%      `Name'.
 %%
 %%      The request is handled by the `handle_cast/2' callback function of the
 %%      interface module. Note that the cast succeeds even if a non-existing
@@ -260,7 +259,11 @@ call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
 cast( Name, Request ) ->
   gen_server:cast( Name, {cast, Request} ).
 
-
+%% @doc Sends a reply to a calling client process.
+%%
+%%      This funciton is to be used when the reply to a caller has been
+%%      deferred by returning `{noreply, _, _}' in `handle_call/3'.
+%% @see handle_call/3
 -spec reply( Client :: {pid(), _}, Reply :: _ ) -> _.
 
 reply( Client, Reply ) when is_tuple( Client ) ->
@@ -271,7 +274,7 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 %% Net state constructor and accessor functions
 %%====================================================================
 
-%% @doc Generates an initial instance of a state record.
+%% @doc Constructs an initial instance of a state record.
 %%
 %%      Such a state record can be used to initialize a `gen_pnet' instance with
 %%      `start_link/1' or `start_link/2'.
@@ -284,19 +287,20 @@ new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
   #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
 
 
-%% @doc Lists the tokens on a given place from a net state.
+%% @doc Extracts the list of tokens on a given place from a given net state.
 %%
 %%      Throws an error if the list does not exist.
 -spec get_ls( Place :: atom(), NetState :: #net_state{} ) -> [_].
 
 get_ls( Place, #net_state{ marking = Marking } ) -> maps:get( Place, Marking ).
 
-
+%% @doc Extracts the user info field from a given net state.
 -spec get_usr_info( NetState :: #net_state{} ) -> _.
 
 get_usr_info( #net_state{ usr_info = UsrInfo } ) -> UsrInfo.
 
 
+%% @doc Extracts the stats field from a given net instance.
 -spec get_stats( NetState :: #net_state{} ) -> #stats{}.
 
 get_stats( #net_state{ stats = Stats } ) -> Stats.

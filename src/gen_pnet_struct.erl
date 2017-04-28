@@ -28,11 +28,11 @@
 %% <ul>
 %%   <li>`place_lst/0' returns the names of the places in the net</li>
 %%   <li>`trsn_lst/0' returns the names of the transitions in the net</li>
-%%   <li>`init_marking/1' returns the initial marking for a given place</li>
+%%   <li>`init_marking/2' returns the initial marking for a given place</li>
 %%   <li>`preset/1' returns the preset places of a given transition</li>
 %%   <li>`is_enabled/2' determines whether a given transition is enabled in a
 %%       given mode</li>
-%%   <li>`fire/2' returns which tokens are produced on what places if a given
+%%   <li>`fire/3' returns which tokens are produced on what places if a given
 %%       transition is fired in a given mode that enables this transition</li>
 %% </ul>
 %%
@@ -76,15 +76,16 @@
 %% `coin_slot' while the transition `b' has the places `signal' and `storage'
 %% in its preset.
 %%
-%% <h4>init_marking/1</h4>
+%% <h4>init_marking/2</h4>
 %%
-%% The `init_marking/1' function lets us define the initial marking for a given
-%% place in the form of a token list.
+%% The `init_marking/2' function lets us define the initial marking for a given
+%% place in the form of a token list. The argument `UsrInfo' is the user info
+%% field that has been generated in the actor interface callback `init/1'.
 %%
 %% Example:
 %% ```
-%% init_marking( storage ) -> [cookie_box, cookie_box, cookie_box];
-%% init_marking( _ )       -> [].
+%% init_marking( storage, _UsrInfo ) -> [cookie_box, cookie_box, cookie_box];
+%% init_marking( _Place, _UsrInfo )  -> [].
 %% '''
 %% Here, we initialize the storage place with three `cookie_box` tokens. All
 %% other places are left empty.
@@ -107,20 +108,22 @@
 %% transition. E.g., managing to get a `button' token on the `coin_slot' place
 %% will not enable any transition.
 %%
-%% <h4>fire/2</h4>
+%% <h4>fire/3</h4>
 %%
-%% The `fire/2' function defines what tokens are produced when a given
+%% The `fire/3' function defines what tokens are produced when a given
 %% transition fires in a given mode. As arguments it takes the name of the
 %% transition, and a firing mode in the form of a hash map mapping place names
-%% to token lists. The `fire/2' function is called only on modes for which
-%% `is_enabled/2' returns `true'. The `fire/2' function is expected to return
+%% to token lists. The `fire/3' function is called only on modes for which
+%% `is_enabled/2' returns `true'. The `fire/3' function is expected to return
 %% either a `{produce, ProduceMap}' tuple or the term `abort'. If `abort' is
 %% returned, the firing is aborted. Nothing is produced or consumed.
 %%
 %% Example:
 %% ```
-%% fire( a, _ ) -> {produce, #{ cash_box => [coin], signal => [sig] }};
-%% fire( b, _ ) -> {produce, #{ compartment => [cookie_box] }}.
+%% fire( a, _Mode, _UsrInfo ) ->
+%%   {produce, #{ cash_box => [coin], signal => [sig] }};
+%% fire( b, _Mode, _UsrInfo ) ->
+%%   {produce, #{ compartment => [cookie_box] }}.
 %% '''
 %% Here, the firing of the transition `a' produces a `coin' token on the
 %% `cash_box' place and a `sig' token on the `signal' place. Similarly, the

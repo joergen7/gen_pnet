@@ -32,9 +32,10 @@
 %%   <li>`handle_call/3' synchronous message exchange</li>
 %%   <li>`handle_cast/2' asynchronous message reception</li>
 %%   <li>`handle_info/2' asynchronous reception of an unformatted message</li>
+%%   <li>`init/1' initializes the gen_pnet instance</li>
 %%   <li>`terminate/2' determines what happens when the net instance is
 %%       stopped</li>
-%%   <li>`trigger/2' allows to add a side effects to the generation of a
+%%   <li>`trigger/3' allows to add a side effects to the generation of a
 %%       token</li>
 %% </ul>
 %%
@@ -55,25 +56,28 @@
 %% between the caller and the net instance. The first argument is the request
 %% message, the second argument is a tuple identifying the caller, and the third
 %% argument is a `#net_state{}' record instance describing the current state of
-%% the net. The `handle_call/3' function can either generate a reply without
-%% changing the net marking by returning a `{reply, Reply}' tuple or it can
-%% generate a reply, consuming or producing tokens by returning a
-%% `{reply, Reply, ConsumeMap, ProduceMap}' tuple.
+%% the net. The `handle_call/3' function can generate a reply without changing
+%% the net marking by returning a `{reply, Reply}' tuple, it can generate a
+%% reply, consuming or producing tokens by returning a
+%% `{reply, Reply, ConsumeMap, ProduceMap}' tuple, it can defer replying without
+%% changing the net marking by returning `noreply', it can defer replying,
+%% consuming or producing tokens by returning a
+%% `{noreply, ConsumeMap, ProduceMap}' tuple, or it can stop the net instance by
+%% returning `{stop, Reason, Reply}'.
 %%
 %% Example:
 %% ```
-%% handle_call( insert_coin, _, _ ) ->
+%% handle_call( insert_coin, _From, _NetState ) ->
 %%   {reply, ok, #{}, #{ coin_slot => [coin] }};
 %%
-%% handle_call( remove_cookie_box, _,
-%%              #net_state{ marking = #{ compartment := C } } ) ->
+%% handle_call( remove_cookie_box, _From, NetState ) ->
 %%
-%%   case C of
+%%   case gen_pnet:get_ls( compartment, NetState ) of
 %%     []    -> {reply, {error, empty_compartment}};
 %%     [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
 %%   end;
 %%
-%% handle_call( _, _, _ ) -> {reply, {error, bad_msg}}.
+%% handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
 %% '''
 %% Here, we react to two kinds of messages: Inserting a coin in the coin slot
 %% and removing a cookie box from the compartment. Thus, we react to an
@@ -126,17 +130,18 @@
 %% terminate( _Reason, _NetState ) -> ok.
 %% '''
 %%
-%% <h4>trigger/2</h4>
+%% <h4>trigger/3</h4>
 %%
-%% The `trigger/2' function determines what happens when a token is produced on
-%% a given place. Its first argument is the place name and its second argument
-%% is the token about to be produced. The `trigger/2' function is expected to
-%% return either `pass' in which case the token is produced normally, or `drop'
-%% in which case the token is forgotten.
+%% The `trigger/3' function determines what happens when a token is produced on
+%% a given place. Its first argument `Place' is the place name, its second
+%% argument `Token' is the token about to be produced, and its third argument
+%% `NetState' is the current state of the net. The `trigger/3' function is
+%% expected to return either `pass' in which case the token is produced
+%% normally, or `drop' in which case the token is forgotten.
 %%
 %% Example:
 %% ```
-%% trigger( _, _ ) -> pass.
+%% trigger( _Place, _Token, _NetState ) -> pass.
 %% '''
 %% Here, we simply let any token pass.
 %%
