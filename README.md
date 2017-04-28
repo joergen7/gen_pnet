@@ -8,7 +8,7 @@ This OTP behavior allows programming with Petri nets. It implements a very gener
 
 The Petri net is specified by implementing a set of callback functions (much like the gen_fsm behavior) declaring the place names, the transition names, the preset for each transition, in what modes a transition is enabled, what happens, when a transition fires in a given mode, and the net's initial marking. To communicate with the outside world, callback functions handling calls, casts, and unformatted messages can be provided. Finally, the user can specify a trigger function that is called for each token that is about to emerge on a place. This trigger function can devise side effects and can either let the token be created normally or make it vanish. Both terminating and live nets can be defined using gen_pnet and even though a live net never finishes to make progress, the net instance is constantly responsive to outside requests. Conflicting transitions fire randomly and fairly.
 
-The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the `gen_pnet` module's API is available online.
+The [documentation](https://cuneiform-lang.org/man/gen_pnet/index.html) of the gen_pnet module's API is available online.
 
 ## Usage
 
