@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016-2017 Jorgen Brandt
+%% Copyright 2016-2017 Jörgen Brandt
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 %% limitations under the License.
 %%
 %% -------------------------------------------------------------------
-%% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.3
-%% @copyright 2016-2017 Jorgen Brandt
+%% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
+%% @version 0.1.4
+%% @copyright 2016-2017 Jörgen Brandt
 %% @doc Callback function definitions for Petri net structure definition.
 %%
 %% There are six callbacks that define the Petri net structure and its initial
@@ -87,7 +87,7 @@
 %% init_marking( storage, _UsrInfo ) -> [cookie_box, cookie_box, cookie_box];
 %% init_marking( _Place, _UsrInfo )  -> [].
 %% '''
-%% Here, we initialize the storage place with three `cookie_box` tokens. All
+%% Here, we initialize the storage place with three `cookie_box' tokens. All
 %% other places are left empty.
 %%
 %% <h4>is_enabled/2</h4>

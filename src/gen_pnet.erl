@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016-2017 Jorgen Brandt
+%% Copyright 2016-2017 Jörgen Brandt
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 %% limitations under the License.
 %%
 %% -------------------------------------------------------------------
-%% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.3
-%% @copyright 2016-2017 Jorgen Brandt
+%% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
+%% @version 0.1.4
+%% @copyright 2016-2017 Jörgen Brandt
 %% @see gen_pnet_iface
 %% @see gen_pnet_struct
 %% @doc Callback function definitions and API for the `gen_pnet' behavior.

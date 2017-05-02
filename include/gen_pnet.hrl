@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016 Jorgen Brandt. All Rights Reserved.
+%% Copyright 2016 Jörgen Brandt. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
-%% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
+%% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
 
 %%====================================================================
 %% Record definitions

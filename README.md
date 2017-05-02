@@ -22,16 +22,16 @@ This section shows how the gen_pnet library can be added to your project, how Pe
 
 #### rebar3
 
-To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.3"}`.
+To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.4"}`.
 
 ```erlang
-{deps, [{gen_pnet, "0.1.3"}]}.
+{deps, [{gen_pnet, "0.1.4"}]}.
 ```
 
 #### mix
 
 ```elixir
-{:gen_pnet, "~> 0.1.3"}
+{:gen_pnet, "~> 0.1.4"}
 ```
 
 ### Defining a Petri net
@@ -124,7 +124,7 @@ Here, the firing of the transition `a` produces a `coin` token on the `cash_box`
 
 ### Callback Functions for the Actor Interface
 
-In addition to the structure callback functions there are another six callback functions that determine how the net instance appears as an Erlang actor to the outside world:
+In addition to the structure callback functions there are another seven callback functions that determine how the net instance appears as an Erlang actor to the outside world:
 
 - `code_change/3` determines what happens when a hot code reload appears
 - `handle_call/3` synchronous message exchange
@@ -184,13 +184,13 @@ Here, we just ignore any message.
 
 #### init/1
 
-The `init/1` function initializes the net instance. It is given a start argument term which is the start argument term that was provided with `gen_pnet:start_link/3`. As a return value a tuple of the form `{ok, #net_state{}}` is expected. We can construct it with the help of `gen_pnet:new/2`. This function takes two arguments: The module implementing the net structure callback functions as well as a user info field.
+The `init/1` function initializes the net instance. It is given a start argument term which is the start argument term that was provided with `gen_pnet:start_link/n`. As a return value a tuple of the form `{ok, #net_state{}}` is expected. We can construct it with the help of `gen_pnet:new/2`. This function takes two arguments: The module implementing the net structure callback functions as well as a user info field.
 
 ```erlang
 init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
 ```
 
-Here we state that the actor interface module is also the net structure module. We initialize the user info field with the empty list `[]`.
+Here, we instantiate a `#net_state{}` record denoting the current module as the Petri net structure callback module and the empty list as the user-info field.
 
 #### terminate/2
 
@@ -273,7 +273,7 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
 
 ## Authors
 
-- Jorgen Brandt (joergen7) [joergen.brandt@onlinehome.de](mailto:joergen.brandt@onlinehome.de)
+- Jörgen Brandt (joergen7) [joergen.brandt@onlinehome.de](mailto:joergen.brandt@onlinehome.de)
 
 ## License
 

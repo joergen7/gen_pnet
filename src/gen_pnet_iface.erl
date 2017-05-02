@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016-2017 Jorgen Brandt
+%% Copyright 2016-2017 Jörgen Brandt
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 %% limitations under the License.
 %%
 %% -------------------------------------------------------------------
-%% @author Jorgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.3
-%% @copyright 2016-2017 Jorgen Brandt
+%% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
+%% @version 0.1.4
+%% @copyright 2016-2017 Jörgen Brandt
 %% @doc Callback function definitions for Petri net actor interface.
 %%
-%% In addition to the structure callback functions there are another six
+%% In addition to the structure callback functions there are another seven
 %% callback functions that determine how the net instance appears as an Erlang
 %% actor to the outside world:
 %%
@@ -118,6 +118,23 @@
 %% '''
 %% Here, we just ignore any message.
 %%
+%% <h4>init/1</h4>
+%%
+%% The `init/1' function initializes the net instance. It is given a start
+%% argument term which is the start argument term that was provided with
+%% `gen_pnet:start_link/n'. As a return value a tuple of the form
+%% `{ok, #net_state{}}' is expected. We can construct it with the help of
+%% `gen_pnet:new/2'. This function takes two arguments: The module implementing
+%% the net structure callback functions as well as a user info field.
+%%
+%% Example:
+%% ```
+%% init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
+%% '''
+%% Here, we instantiate a `#net_state{}' record denoting the current module as
+%% the Petri net structure callback module and the empty list as the user-info
+%% field.
+%%
 %% <h4>terminate/2</h4>
 %%
 %% The `terminate/2' function determines what happens when the net instance is
@@ -147,9 +164,6 @@
 %%
 %% @end
 %% -------------------------------------------------------------------
-
-
-
 
 -module( gen_pnet_iface ).
 
