@@ -96,6 +96,8 @@
 -type handle_info_result() :: {noreply, #net_state{}}
                             | {stop, _, #net_state{}}.
 
+-type prop() :: atom() | {atom(), _}.
+
 %%====================================================================
 %% Callback definitions
 %%====================================================================
@@ -156,7 +158,7 @@
 -spec start_link( IfaceMod, Args, Options ) -> start_link_result()
 when IfaceMod :: atom(),
      Args     :: _,
-     Options  :: proplists:proplist().
+     Options  :: [prop()].
 
 start_link( IfaceMod, Args, Options )
 when is_atom( IfaceMod ), is_list( Options ) ->
@@ -176,7 +178,7 @@ when is_atom( IfaceMod ), is_list( Options ) ->
 when ServerName :: server_name(),
      IfaceMod   :: atom(),
      Args       :: _,
-     Options    :: proplists:proplist().
+     Options    :: [prop()].
 
 start_link( ServerName, IfaceMod, Args, Options )
 when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
