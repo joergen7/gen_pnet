@@ -30,7 +30,7 @@
 %%   <li>`trsn_lst/0' returns the names of the transitions in the net</li>
 %%   <li>`init_marking/2' returns the initial marking for a given place</li>
 %%   <li>`preset/1' returns the preset places of a given transition</li>
-%%   <li>`is_enabled/2' determines whether a given transition is enabled in a
+%%   <li>`is_enabled/3' determines whether a given transition is enabled in a
 %%       given mode</li>
 %%   <li>`fire/3' returns which tokens are produced on what places if a given
 %%       transition is fired in a given mode that enables this transition</li>
@@ -90,16 +90,17 @@
 %% Here, we initialize the storage place with three `cookie_box' tokens. All
 %% other places are left empty.
 %%
-%% <h4>is_enabled/2</h4>
+%% <h4>is_enabled/3</h4>
 %%
-%% The `is_enabled/2' function is a predicate determining whether a given
-%% transition is enabled in a given mode.
+%% The `is_enabled/3' function is a predicate determining whether a given
+%% transition is enabled in a given mode. The `UsrInfo' argument is the user
+%% info field that has been created with `init/1'.
 %%
 %% Example:
 %% ```
-%% is_enabled( a, #{ coin_slot := [coin] } )                      -> true;
-%% is_enabled( b, #{ signal := [sig], storage := [cookie_box] } ) -> true;
-%% is_enabled( _, _ )                                             -> false.
+%% is_enabled( a, #{ coin_slot := [coin] }, _UsrInfo )                      -> true;
+%% is_enabled( b, #{ signal := [sig], storage := [cookie_box] }, _UsrInfo ) -> true;
+%% is_enabled( _Trsn, _Mode, _UsrInfo )                                     -> false.
 %% '''
 %% Here, we state that the transition `a' is enabled if it can consume a single
 %% `coin' from the `coin_slot' place. Similarly, the transition `b' is enabled
@@ -114,7 +115,7 @@
 %% transition fires in a given mode. As arguments it takes the name of the
 %% transition, and a firing mode in the form of a hash map mapping place names
 %% to token lists. The `fire/3' function is called only on modes for which
-%% `is_enabled/2' returns `true'. The `fire/3' function is expected to return
+%% `is_enabled/3' returns `true'. The `fire/3' function is expected to return
 %% either a `{produce, ProduceMap}' tuple or the term `abort'. If `abort' is
 %% returned, the firing is aborted. Nothing is produced or consumed.
 %%
@@ -146,7 +147,8 @@
 
 -callback preset( Trsn :: atom() ) -> [atom()].
 
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
+            boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
             abort | {produce, #{ atom() => [_] }}.

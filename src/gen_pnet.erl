@@ -144,7 +144,8 @@
 
 -callback preset( Trsn :: atom() ) -> [atom()].
 
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]} ) -> boolean().
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
+            boolean().
 
 -callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
             abort | {produce, #{ atom() => [_] }}.
@@ -589,7 +590,7 @@ progress( #net_state{ marking  = Marking,
   F = fun( T, Acc ) ->
         Preset = NetMod:preset( T ),
         MLst = enum_mode( Preset, Marking ),
-        IsEnabled = fun( M ) -> NetMod:is_enabled( T, M ) end,
+        IsEnabled = fun( M ) -> NetMod:is_enabled( T, M, UsrInfo ) end,
         EnabledMLst = lists:filter( IsEnabled, MLst ),
         case EnabledMLst of
           []    -> Acc;
