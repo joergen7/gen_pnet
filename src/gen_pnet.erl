@@ -87,7 +87,7 @@
                             | {stop, _, _, #net_state{}}.
 
 
--type handle_cast_request() :: {produce, #{ atom() => [_] }}
+-type handle_cast_request() :: continue
                              | {cast, _}.
 
 -type handle_cast_result() :: {noreply, #net_state{}}
@@ -354,15 +354,17 @@ handle_call( {call, Request}, From,
     
     {reply, Reply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
-      produce( self(), ProdMap ),
-      {reply, Reply, NetState1};
+      NetState2 = handle_trigger( ProdMap, NetState1 ),
+      continue( self() ),
+      {reply, Reply, NetState2};
 
     noreply ->
       {noreply, NetState};
 
     {noreply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
-      produce( self(), ProdMap ),
+      NetState2 = handle_trigger( ProdMap, NetState1 ),
+      continue( self() ),
       {noreply, NetState1};
 
     {stop, Reason, Reply} ->
@@ -382,22 +384,21 @@ handle_call( reset_stats, _From, NetState ) ->
 when Request  :: handle_cast_request(),
      NetState :: #net_state{}.
 
-handle_cast( {produce, ProdMap},
+handle_cast( continue,
              NetState = #net_state{ stats  = Stats,
                                     tstart = T1,
                                     cnt    = Cnt } ) ->
   
-  NetState1 = handle_trigger( ProdMap, NetState ),
-
-  case progress( NetState1 ) of
+  case progress( NetState ) of
 
     abort ->
-      {noreply, NetState1};
+      {noreply, NetState};
 
     {delta, Mode, Pm} ->
 
-      NetState2 = cns( Mode, NetState1 ),
-      produce( self(), Pm ),
+      NetState1 = cns( Mode, NetState ),
+      NetState2 = handle_trigger( Pm, NetState1 ),
+      continue( self() ),
 
       NetState3 = if
                     Cnt < 1000 -> NetState2#net_state{ cnt = Cnt+1 };
@@ -448,8 +449,9 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
     {noreply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
-      produce( self(), ProdMap ),
-      {noreply, NetState1};
+      NetState2 = handle_trigger( ProdMap, NetState1 ),
+      continue( self() ),
+      {noreply, NetState2};
 
     {stop, Reason} ->
       {stop, Reason, NetState}
@@ -471,7 +473,8 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
     {noreply, CnsMap, ProdMap} ->
       NetState1 = cns( CnsMap, NetState ),
-      produce( self(), ProdMap ),
+      NetState2 = handle_trigger( ProdMap, NetState1 ),
+      continue( self() ),
       {noreply, NetState1};
 
     {stop, Reason} ->
@@ -496,7 +499,7 @@ init( {IfaceMod, Args} ) ->
 
   InitMarking = lists:foldl( F, #{}, PlaceLst ),
 
-  produce( self(), #{} ),
+  continue( self() ),
 
   {ok, NetState#net_state{ iface_mod = IfaceMod,
                            marking   = InitMarking,
@@ -516,15 +519,14 @@ terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 %% Internal functions
 %%====================================================================
 
-%% @doc Produce the tokens on the places as described in the `ProdMap' argument
-%%      atomically in the net instance under process id `Name'.
+%% @doc Continue making progress in net instance under process id `Name'.
 %%
-%%      Note that production succeeds even if a non-existing process is
+%%      Note that continuing succeeds even if a non-existing process is
 %%      addressed or the net instance is down.
--spec produce( Name :: name(), ProdMap :: #{ atom() => [_] } ) -> ok.
+-spec continue( Name :: name() ) -> ok.
 
-produce( Name, ProdMap ) ->
-  gen_server:cast( Name, {produce, ProdMap} ).
+continue( Name ) ->
+  gen_server:cast( Name, continue ).
 
 
 -spec handle_trigger( ProdMap, NetState ) -> #net_state{}
