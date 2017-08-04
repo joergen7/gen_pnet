@@ -22,16 +22,16 @@ This section shows how the gen_pnet library can be added to your project, how Pe
 
 #### rebar3
 
-To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.5"}`.
+To integrate gen_pnet into a rebar3 managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{gen_pnet, "0.1.6"}`.
 
 ```erlang
-{deps, [{gen_pnet, "0.1.5"}]}.
+{deps, [{gen_pnet, "0.1.6"}]}.
 ```
 
 #### mix
 
 ```elixir
-{:gen_pnet, "~> 0.1.5"}
+{:gen_pnet, "~> 0.1.6"}
 ```
 
 ### Defining a Petri net

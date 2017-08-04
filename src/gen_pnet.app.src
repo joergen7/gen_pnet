@@ -1,6 +1,6 @@
 {application, gen_pnet,
  [{description, "A generic Petri net OTP behavior."},
-  {vsn, "0.1.5"},
+  {vsn, "0.1.6"},
   {registered, []},
   {applications,
    [kernel,
@@ -13,6 +13,5 @@
   {licenses, ["Apache 2.0"]},
   {links, [
            {"GitHub", "https://github.com/joergen7/gen_pnet/"},
-           {"Docs", "https://hexdocs.pm/gen_pnet/"}
           ]}
  ]}.
