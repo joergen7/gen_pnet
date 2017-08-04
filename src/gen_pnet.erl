@@ -365,7 +365,7 @@ handle_call( {call, Request}, From,
       NetState1 = cns( CnsMap, NetState ),
       NetState2 = handle_trigger( ProdMap, NetState1 ),
       continue( self() ),
-      {noreply, NetState1};
+      {noreply, NetState2};
 
     {stop, Reason, Reply} ->
       {stop, Reason, Reply, NetState}
@@ -475,7 +475,7 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
       NetState1 = cns( CnsMap, NetState ),
       NetState2 = handle_trigger( ProdMap, NetState1 ),
       continue( self() ),
-      {noreply, NetState1};
+      {noreply, NetState2};
 
     {stop, Reason} ->
       {stop, Reason, NetState}
