@@ -344,7 +344,7 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
 
 ## Authors
 
-- Jörgen Brandt (joergen7) [joergen.brandt@onlinehome.de](mailto:joergen.brandt@onlinehome.de)
+- Jörgen Brandt ([@joergen7](https://github.com/joergen7/)) [joergen.brandt@onlinehome.de](mailto:joergen.brandt@onlinehome.de)
 
 ## License
 
