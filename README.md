@@ -339,8 +339,6 @@ Calling with `remove_cookie_box` a second time will yield an error, since only o
 - [joergen7/gen_pnet_examples](https://github.com/joergen7/gen_pnet_examples). A collection of examples using gen_pnet.
 - [joergen7/gruff](https://github.com/joergen7/gruff). A basic worker pool manager for Erlang to showcase gen_pnet.
 - [joergen7/cre](https://github.com/joergen7/cre). A common runtime environment for distributed workflow languages.
-- [joergen7/cre_client](https://github.com/joergen7/cre_client). A client behavior for the common runtime environment (cre).
-- [joergen7/cre_worker](https://github.com/joergen7/cre_worker). A worker behavior for the common runtime environment (cre).
 
 ## Authors
 
