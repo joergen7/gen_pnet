@@ -41,7 +41,8 @@
 
 % API functions
 -export( [start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
-          cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1] ).
+          cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1,
+          state_property/3] ).
 
 % Net state constructor and accessor functions
 -export( [new/2, get_ls/2, get_usr_info/1, get_stats/1] ).
@@ -246,10 +247,12 @@ call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
 %%
 %%      The timeout is explicitly set to `Timeout`. The request is handled by
 %%      the `handle_call/3' callback function of the interface module.
+
 -spec call( Name :: name(), Request :: _, Timeout :: non_neg_integer() ) -> _.
 
 call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
   gen_server:call( Name, {call, Request}, Timeout ).
+
 
 %% @doc Asynchronously send the term `Request' to the net instance identified as
 %%      `Name'.
@@ -257,20 +260,39 @@ call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
 %%      The request is handled by the `handle_cast/2' callback function of the
 %%      interface module. Note that the cast succeeds even if a non-existing
 %%      process is addressed or the net instance is down.
+
 -spec cast( Name :: name(), Request :: _ ) -> ok.
 
 cast( Name, Request ) ->
   gen_server:cast( Name, {cast, Request} ).
 
+
 %% @doc Sends a reply to a calling client process.
 %%
 %%      This funciton is to be used when the reply to a caller has been
 %%      deferred by returning `{noreply, _, _}' in `handle_call/3'.
+%%
 %% @see handle_call/3
+
 -spec reply( Client :: {pid(), _}, Reply :: _ ) -> _.
 
 reply( Client, Reply ) when is_tuple( Client ) ->
   gen_server:reply( Client, Reply ).
+
+
+%% @doc Checks if a predicate about the state of the net holds.
+
+-spec state_property( Name, Pred, PlaceLst ) -> boolean()
+when Name     :: name(),
+     Pred     :: fun( ( ... ) -> boolean() ),
+     PlaceLst :: [atom()].
+
+state_property( Name, Pred, PlaceLst )
+when is_list( PlaceLst ),
+     is_function( Fun, length( PlaceLst ) ) ->
+
+  ArgLst = [maps:get( Place, gen_pnet:marking( Name ) ) || Place <- PlaceLst],
+  apply( Pred, ArgLst ).
 
 
 %%====================================================================
