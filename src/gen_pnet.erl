@@ -289,7 +289,7 @@ when Name     :: name(),
 
 state_property( Name, Pred, PlaceLst )
 when is_list( PlaceLst ),
-     is_function( Fun, length( PlaceLst ) ) ->
+     is_function( Pred, length( PlaceLst ) ) ->
 
   ArgLst = [maps:get( Place, gen_pnet:marking( Name ) ) || Place <- PlaceLst],
   apply( Pred, ArgLst ).
