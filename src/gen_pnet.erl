@@ -176,6 +176,7 @@ when is_atom( IfaceMod ), is_list( Options ) ->
 %%      to `gen_server:start_link/4' as is.
 %%
 %% @see init/1
+
 -spec start_link( ServerName, IfaceMod, Args, Options ) -> start_link_result()
 when ServerName :: server_name(),
      IfaceMod   :: atom(),
@@ -186,47 +187,58 @@ start_link( ServerName, IfaceMod, Args, Options )
 when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
   gen_server:start_link( ServerName, ?MODULE, {IfaceMod, Args}, Options ).
 
+
 %% @doc Query the list of tokens on the place named `Place' in the net instance
 %%      identified as `Name'.
 %%
 %%      Herein, `Name' can be a process id or a registered process name. The
 %%      return value is either `{ok, [_]}'' if the place exists or a
 %%      `{error, #bad_place{}}' tuple.
+
 -spec ls( Name, Place ) -> {ok, [_]} | {error, #bad_place{}}
 when Name  :: name(),
      Place :: atom().
 
 ls( Name, Place ) when is_atom( Place ) -> gen_server:call( Name, {ls, Place} ).
 
+
 %% @doc Query the marking map of the net instance identified as `Name'
 %%      associating to each place name the list of tokens that this place holds.
 %%
 %%      Herein, `Name' can be a process id or a registered process name. The
 %%      return value is the Petri net's marking map.
+
 -spec marking( Name :: name() ) -> #{ atom() => [_] }.
 
 marking( Name ) -> gen_server:call( Name, marking ).
 
+
 %% @doc Query the user info term from the net instance identified as `Name'.
+
 -spec usr_info( Name :: name() ) -> _.
 
 usr_info( Name ) -> gen_server:call( Name, usr_info ).
+
 
 %% @doc Query the statistics gathered by the net instance identified as `Name'.
 %%
 %%      The throughput is given as a `#stats{}' record consisting of three
 %%      `#stat{}' record instances characterizing the current, maximum, and
 %%      minimum throughput of this net in transition firings per second.
+
 -spec stats( Name :: name() ) -> #stats{}.
 
 stats( Name ) -> gen_server:call( Name, stats ).
 
 %% @doc Requests the net instance identified as `Name' to clear its stats.
+
 -spec reset_stats( Name :: name() ) -> ok.
 
 reset_stats( Name ) -> gen_server:call( Name, reset_stats ).
 
+
 %% @doc Requests the net instance identified as `Name' to stop.
+
 -spec stop( Name :: name() ) -> ok.
 
 stop( Name ) -> gen_server:stop( Name ).
@@ -236,7 +248,9 @@ stop( Name ) -> gen_server:stop( Name ).
 %%      `Name' and return the reply.
 
 %%      The timeout is implicitly set to five seconds.
+%%
 %% @see call/3
+
 -spec call( Name :: name(), Request :: _ ) -> _.
 
 call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
@@ -281,10 +295,17 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 
 
 %% @doc Checks if a predicate about the state of the net holds.
+%%
+%%      The function takes a Petri net instance identified as `Name` and asks it
+%%      to verify the predicate `Pred` over its marking. Herein, `Pred` is a
+%%      function that takes n token lists, where each of the token lists subsume
+%%      the tokens present on the places identified by the `PlaceLst` argument.
+%%      The predicate is expected to return either `ok` or `{error, Reason}`
+%%      where Reason can be any Erlang term.
 
--spec state_property( Name, Pred, PlaceLst ) -> boolean()
+-spec state_property( Name, Pred, PlaceLst ) -> ok | {error, Reason}
 when Name     :: name(),
-     Pred     :: fun( ( ... ) -> boolean() ),
+     Pred     :: fun( ( ... ) -> ok | {error, Reason} ),
      PlaceLst :: [atom()].
 
 state_property( Name, Pred, PlaceLst )
