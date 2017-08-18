@@ -296,11 +296,11 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 
 %% @doc Checks if a predicate about the state of the net holds.
 %%
-%%      The function takes a Petri net instance identified as `Name` and asks it
-%%      to verify the predicate `Pred` over its marking. Herein, `Pred` is a
+%%      The function takes a Petri net instance identified as `Name' and asks it
+%%      to verify the predicate `Pred` over its marking. Herein, `Pred' is a
 %%      function that takes n token lists, where each of the token lists subsume
-%%      the tokens present on the places identified by the `PlaceLst` argument.
-%%      The predicate is expected to return either `ok` or `{error, Reason}`
+%%      the tokens present on the places identified by the `PlaceLst' argument.
+%%      The predicate is expected to return either `ok' or `{error, Reason}''
 %%      where Reason can be any Erlang term.
 
 -spec state_property( Name, Pred, PlaceLst ) -> ok | {error, Reason}
