@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.6
+%% @version 0.1.7
 %% @copyright 2016-2017 Jörgen Brandt
 %% @doc Callback function definitions for Petri net structure definition.
 %%

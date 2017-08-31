@@ -1,6 +1,6 @@
 {application, gen_pnet,
  [{description, "A generic Petri net OTP behavior."},
-  {vsn, "0.1.6"},
+  {vsn, "0.1.7"},
   {registered, []},
   {applications,
    [kernel,

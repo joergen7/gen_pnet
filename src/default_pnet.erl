@@ -1,3 +1,5 @@
+%% -*- erlang -*-
+
 -module( default_pnet ).
 -behaviour( gen_pnet ).
 
