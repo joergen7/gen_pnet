@@ -192,7 +192,7 @@ when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
 %%      identified as `Name'.
 %%
 %%      Herein, `Name' can be a process id or a registered process name. The
-%%      return value is either `{ok, [_]}'' if the place exists or a
+%%      return value is either `{ok, [_]}' if the place exists or a
 %%      `{error, #bad_place{}}' tuple.
 
 -spec ls( Name, Place ) -> {ok, [_]} | {error, #bad_place{}}
@@ -259,13 +259,20 @@ call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
 %% @doc Synchronously send the term `Request' to the net instance identified as
 %%      `Name' and return the reply.
 %%
-%%      The timeout is explicitly set to `Timeout`. The request is handled by
-%%      the `handle_call/3' callback function of the interface module.
+%%      The timeout is explicitly set to `Timeout'. The request is handled by
+%%      the `handle_call/3' callback function of the interface module. Herein
+%%      `Timeout' must be a non-negative integer or the atom `infinity'.
 
--spec call( Name :: name(), Request :: _, Timeout :: non_neg_integer() ) -> _.
+-spec call( Name, Request, Timeout ) -> _
+when Name    :: name(),
+     Request :: _,
+     Timeout :: non_neg_integer() | infinity.
 
 call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
-  gen_server:call( Name, {call, Request}, Timeout ).
+  gen_server:call( Name, {call, Request}, Timeout );
+
+call( Name, Request, infinity ) ->
+  gen_server:call( Name, {call, Request}, infinity ).
 
 
 %% @doc Asynchronously send the term `Request' to the net instance identified as
@@ -297,10 +304,10 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 %% @doc Checks if a predicate about the state of the net holds.
 %%
 %%      The function takes a Petri net instance identified as `Name' and asks it
-%%      to verify the predicate `Pred` over its marking. Herein, `Pred' is a
+%%      to verify the predicate `Pred' over its marking. Herein, `Pred' is a
 %%      function that takes n token lists, where each of the token lists subsume
 %%      the tokens present on the places identified by the `PlaceLst' argument.
-%%      The predicate is expected to return either `ok' or `{error, Reason}''
+%%      The predicate is expected to return either `ok' or `{error, Reason}'
 %%      where Reason can be any Erlang term.
 
 -spec state_property( Name, Pred, PlaceLst ) -> ok | {error, Reason}
