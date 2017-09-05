@@ -43,14 +43,13 @@ start_link( ServerName ) -> gen_pnet:start_link( ServerName, ?MODULE, [], [] ).
 %% Interface callback functions
 %%====================================================================
 
--spec code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
-        {ok, #net_state{}} | {error, _}.
+-spec code_change( OldVsn :: _, NetState :: _, Extra :: _ ) ->
+        {ok, _} | {error, _}.
 
 code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
 
 
--spec handle_call( Request :: _, From :: {pid(), _},
-                       NetState :: #net_state{} ) ->
+-spec handle_call( Request :: _, From :: {pid(), _}, NetState :: _ ) ->
               {reply, _}
             | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
             | noreply
@@ -60,7 +59,7 @@ code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
 handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
 
 
--spec handle_cast( Request :: _, NetState :: #net_state{} ) ->
+-spec handle_cast( Request :: _, NetState :: _ ) ->
               noreply
             | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
             | {stop, _}.
@@ -68,7 +67,7 @@ handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
 handle_cast( _Request, _NetState ) -> noreply.
 
 
--spec handle_info( Info :: _, NetState :: #net_state{} ) ->
+-spec handle_info( Info :: _, NetState :: _ ) ->
               noreply
             | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
             | {stop, _}.
@@ -76,17 +75,17 @@ handle_cast( _Request, _NetState ) -> noreply.
 handle_info( _Request, _NetState ) -> noreply.
 
 
--spec init( Args :: _ ) -> {ok, #net_state{}}.
+-spec init( Args :: _ ) -> {ok, _}.
 
 init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
 
 
--spec terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+-spec terminate( Reason :: _, NetState :: _ ) -> ok.
 
 terminate( _Reason, _NetState ) -> ok.
 
 
--spec trigger( Place :: atom(), Token :: _, NetState :: #net_state{} ) ->
+-spec trigger( Place :: atom(), Token :: _, NetState :: _ ) ->
             pass | drop.
 
 trigger( _Place, _Token, _NetState ) -> pass.
