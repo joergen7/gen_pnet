@@ -246,9 +246,7 @@
 %% ```
 %% init( _NetArg ) -> [].
 %% '''
-%% Here, we instantiate a `#net_state{}' record denoting the current module as
-%% the Petri net structure callback module and the empty list as the user-info
-%% field.
+%% Here, we return the empty list as a dummy user info field.
 %%
 %% <h4>terminate/2</h4>
 %%

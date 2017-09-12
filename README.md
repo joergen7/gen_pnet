@@ -240,16 +240,16 @@ Here, we just ignore any message.
 #### init/1
 
 ```erlang
--callback init( Args :: _ ) -> {ok, #net_state{}}.
+-callback init( Args :: _ ) -> UsrInfo :: _.
 ```
 
-The `init/1` function initializes the net instance. It is given a start argument term which is the start argument term that was provided with `gen_pnet:start_link/n`. As a return value a tuple of the form `{ok, #net_state{}}` is expected. We can construct it with the help of `gen_pnet:new/2`. This function takes two arguments: The module implementing the net structure callback functions as well as a user info field.
+The `init/1` function initializes the net instance. It is given an initial argument which is provided with `gen_pnet:start_link/n`. The `init/1` function is expected to return a user info field which is later handed to other callback functions.
 
 ```erlang
-init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
+init( _Args ) -> [].
 ```
 
-Here, we instantiate a `#net_state{}` record denoting the current module as the Petri net structure callback module and the empty list as the user-info field.
+Here, we return the empty list as a dummy user info field.
 
 #### terminate/2
 
