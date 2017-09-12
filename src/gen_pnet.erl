@@ -20,14 +20,262 @@
 %% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
 %% @version 0.1.7
 %% @copyright 2016-2017 Jörgen Brandt
-%% @see gen_pnet_iface
-%% @see gen_pnet_struct
+%%
 %% @doc Callback function definitions and API for the `gen_pnet' behavior.
 %%
-%% The callbacks defined for the `gen_pnet' behavior may be separated into a
-%% Petri net structure part and an actor interface part. Both behaviors are
-%% documented in the `gen_pnet_struct' and `gen_pnet_iface' modules
-%% respectively.
+%% <h3>Net Structure Callback Functions</h3>
+%%
+%% There are six callbacks that define the Petri net structure and its initial
+%% marking:
+%%
+%% <ul>
+%%   <li>`place_lst/0' returns the names of the places in the net</li>
+%%   <li>`trsn_lst/0' returns the names of the transitions in the net</li>
+%%   <li>`init_marking/2' returns the initial marking for a given place</li>
+%%   <li>`preset/1' returns the preset places of a given transition</li>
+%%   <li>`is_enabled/3' determines whether a given transition is enabled in a
+%%       given mode</li>
+%%   <li>`fire/3' returns which tokens are produced on what places if a given
+%%       transition is fired in a given mode that enables this transition</li>
+%% </ul>
+%%
+%% We have a look at each of them in turn.
+%%
+%% <h4>place_lst/0</h4>
+%%
+%% The `place_lst/0' function lets us define the names of all places in the net.
+%%
+%% Example:
+%% ```
+%% place_lst() ->
+%%   [coin_slot, cash_box, signal, storage, compartment].
+%% '''
+%% Here, we define the net to have the five places in the cookie vending
+%% machine.
+%%
+%% <h4>trsn_lst/0</h4>
+%%
+%% The `trsn_lst/0' function lets us define the names of all transitions in the
+%% net.
+%%
+%% Example:
+%% ```
+%% trsn_lst() ->
+%%   [a, b].
+%% '''
+%% Here, we define the net to have the two places `a' and `b' in the cookie
+%% vending machine.
+%%
+%% <h4>preset/1</h4>
+%%
+%% The `preset/1' lets us define the preset places of a given transition.
+%%
+%% Example:
+%% ```
+%% preset( a ) -> [coin_slot];
+%% preset( b ) -> [signal, storage].
+%% '''
+%% Here, we define the preset of the transition `a' to be just the place
+%% `coin_slot' while the transition `b' has the places `signal' and `storage'
+%% in its preset.
+%%
+%% <h4>init_marking/2</h4>
+%%
+%% The `init_marking/2' function lets us define the initial marking for a given
+%% place in the form of a token list. The argument `UsrInfo' is the user info
+%% field that has been generated in the actor interface callback `init/1'.
+%%
+%% Example:
+%% ```
+%% init_marking( storage, _UsrInfo ) -> [cookie_box, cookie_box, cookie_box];
+%% init_marking( _Place, _UsrInfo )  -> [].
+%% '''
+%% Here, we initialize the storage place with three `cookie_box' tokens. All
+%% other places are left empty.
+%%
+%% <h4>is_enabled/3</h4>
+%%
+%% The `is_enabled/3' function is a predicate determining whether a given
+%% transition is enabled in a given mode. The `UsrInfo' argument is the user
+%% info field that has been created with `init/1'.
+%%
+%% Example:
+%% ```
+%% is_enabled( a, #{ coin_slot := [coin] }, _UsrInfo )                      -> true;
+%% is_enabled( b, #{ signal := [sig], storage := [cookie_box] }, _UsrInfo ) -> true;
+%% is_enabled( _Trsn, _Mode, _UsrInfo )                                     -> false.
+%% '''
+%% Here, we state that the transition `a' is enabled if it can consume a single
+%% `coin' from the `coin_slot' place. Similarly, the transition `b' is enabled
+%% if it can consume a `sig' token from the `signal' place and a `cookie_box'
+%% token from the `storage` place. No other configuration can enable a
+%% transition. E.g., managing to get a `button' token on the `coin_slot' place
+%% will not enable any transition.
+%%
+%% <h4>fire/3</h4>
+%%
+%% The `fire/3' function defines what tokens are produced when a given
+%% transition fires in a given mode. As arguments it takes the name of the
+%% transition, and a firing mode in the form of a hash map mapping place names
+%% to token lists. The `fire/3' function is called only on modes for which
+%% `is_enabled/3' returns `true'. The `fire/3' function is expected to return
+%% either a `{produce, ProduceMap}' tuple or the term `abort'. If `abort' is
+%% returned, the firing is aborted. Nothing is produced or consumed.
+%%
+%% Example:
+%% ```
+%% fire( a, _Mode, _UsrInfo ) ->
+%%   {produce, #{ cash_box => [coin], signal => [sig] }};
+%% fire( b, _Mode, _UsrInfo ) ->
+%%   {produce, #{ compartment => [cookie_box] }}.
+%% '''
+%% Here, the firing of the transition `a' produces a `coin' token on the
+%% `cash_box' place and a `sig' token on the `signal' place. Similarly, the
+%% firing of the transition `b' produces a `cookie_box' token on the
+%% `compartment' place. We do not need to state the tokens to be consumed
+%% because the firing mode already uniquely identifies the tokens to be
+%% consumed.
+%%
+%%
+%% <h3>Interface Callback Functions</h3>
+%%
+%% In addition to the structure callback functions there are another seven
+%% callback functions that determine how the net instance appears as an Erlang
+%% actor to the outside world:
+%%
+%% <ul>
+%%   <li>`code_change/3' determines what happens when a hot code reload
+%%       appears</li>
+%%   <li>`handle_call/3' synchronous message exchange</li>
+%%   <li>`handle_cast/2' asynchronous message reception</li>
+%%   <li>`handle_info/2' asynchronous reception of an unformatted message</li>
+%%   <li>`init/1' initializes the gen_pnet instance</li>
+%%   <li>`terminate/2' determines what happens when the net instance is
+%%       stopped</li>
+%%   <li>`trigger/3' allows to add a side effects to the generation of a
+%%       token</li>
+%% </ul>
+%%
+%% <h4>code_change/3</h4>
+%%
+%% The `code_change/3' function determines what happens when a hot code reload
+%% appears. This callback is identical to the `code_change/3' function in the
+%% `gen_server' behavior.
+%%
+%% Example:
+%% ```
+%% code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
+%% '''
+%%
+%% <h4>handle_call/3</h4>
+%%
+%% The `handle_call/3' function performs a synchronous exchange of messages
+%% between the caller and the net instance. The first argument is the request
+%% message, the second argument is a tuple identifying the caller, and the third
+%% argument is a `#net_state{}' record instance describing the current state of
+%% the net. The `handle_call/3' function can generate a reply without changing
+%% the net marking by returning a `{reply, Reply}' tuple, it can generate a
+%% reply, consuming or producing tokens by returning a
+%% `{reply, Reply, ConsumeMap, ProduceMap}' tuple, it can defer replying without
+%% changing the net marking by returning `noreply', it can defer replying,
+%% consuming or producing tokens by returning a
+%% `{noreply, ConsumeMap, ProduceMap}' tuple, or it can stop the net instance by
+%% returning `{stop, Reason, Reply}'.
+%%
+%% Example:
+%% ```
+%% handle_call( insert_coin, _From, _NetState ) ->
+%%   {reply, ok, #{}, #{ coin_slot => [coin] }};
+%%
+%% handle_call( remove_cookie_box, _From, NetState ) ->
+%%
+%%   case gen_pnet:get_ls( compartment, NetState ) of
+%%     []    -> {reply, {error, empty_compartment}};
+%%     [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
+%%   end;
+%%
+%% handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
+%% '''
+%% Here, we react to two kinds of messages: Inserting a coin in the coin slot
+%% and removing a cookie box from the compartment. Thus, we react to an
+%% `insert_coin' message by replying with `ok', consuming nothing and producing
+%% a `coin' token on the `coin_slot' place. When receiving a `remove_cookie_box'
+%% message, we check whether the `compartment' place is empty, replying with an
+%% error message if it is, otherwise replying with `ok', consuming one
+%% `cookie_box' token from the `compartment' place, and producing nothing. Calls
+%% that are neither `insert_coin' nor `remove_cookie_box' are responded to with
+%% an error message.
+%%
+%% <h4>handle_cast/2</h4>
+%%
+%% The `handle_cast/2' function reacts to an asynchronous message received by
+%% the net instance. The first argument is the request while the second argument
+%% is a `#net_state{}' record instance. The `handle_cast/2' function can either
+%% leave the net unchanged by returning `noreply' or it can consume or produce
+%% tokens by returning a `{noreply, ConsumeMap, ProduceMap}' tuple.
+%%
+%% Example:
+%% ```
+%% handle_cast( _Request, _NetState ) -> noreply.
+%% '''
+%% Here, we just ignore any cast.
+%%
+%% <h4>handle_info/2</h4>
+%%
+%% The `handle_info/2' function reacts to an asynchronous, unformatted message
+%% received by the net instance. The first argument is the message term while
+%% the second argument is a `#net_state{}' record instance. The `handle_info/2'
+%% function can either leave the net unchanged by returning `noreply' or it can
+%% consume or produce tokens by returning a `{noreply, ConsumeMap, ProduceMap}'
+%% tuple.
+%%
+%% Example:
+%% ```
+%% handle_info( _Request, _NetState ) -> noreply.
+%% '''
+%% Here, we just ignore any message.
+%%
+%% <h4>init/1</h4>
+%%
+%% The `init/1' function initializes the net instance. It is given an initial
+%% argument which is provided with `gen_pnet:start_link/n'. The `init/1'
+%% function is expected to return a user info field which is later handed to
+%% other callback functions.
+%%
+%% Example:
+%% ```
+%% init( _NetArg ) -> [].
+%% '''
+%% Here, we instantiate a `#net_state{}' record denoting the current module as
+%% the Petri net structure callback module and the empty list as the user-info
+%% field.
+%%
+%% <h4>terminate/2</h4>
+%%
+%% The `terminate/2' function determines what happens when the net instance is
+%% stopped. The first argument is the reason for termination while the second
+%% argument is a `#net_state{}' record instance. This callback is identical to
+%% the `terminate/2' function in the `gen_server' behavior.
+%%
+%% Example:
+%% ```
+%% terminate( _Reason, _NetState ) -> ok.
+%% '''
+%%
+%% <h4>trigger/3</h4>
+%%
+%% The `trigger/3' function determines what happens when a token is produced on
+%% a given place. Its first argument `Place' is the place name, its second
+%% argument `Token' is the token about to be produced, and its third argument
+%% `NetState' is the current state of the net. The `trigger/3' function is
+%% expected to return either `pass' in which case the token is produced
+%% normally, or `drop' in which case the token is forgotten.
+%%
+%% Example:
+%% ```
+%% trigger( _Place, _Token, _NetState ) -> pass.
+%% '''
+%% Here, we simply let any token pass.
 %%
 %% @end
 %% -------------------------------------------------------------------
@@ -45,7 +293,7 @@
           state_property/3] ).
 
 % Net state constructor and accessor functions
--export( [new/2, get_ls/2, get_usr_info/1, get_stats/1] ).
+-export( [get_ls/2, get_usr_info/1, get_stats/1] ).
 
 % gen_server callbacks
 -export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
@@ -103,6 +351,23 @@
 %% Callback definitions
 %%====================================================================
 
+%% Structure callbacks
+
+-callback place_lst() -> [atom()].
+
+-callback trsn_lst() -> [atom()].
+
+-callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
+
+-callback preset( Trsn :: atom() ) -> [atom()].
+
+-callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
+            boolean().
+
+-callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
+            abort | {produce, #{ atom() => [_] }}.
+
+
 %% Interface callbacks
 
 -callback code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
@@ -126,7 +391,7 @@
             | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
             | {stop, _}.
 
--callback init( Args :: _ ) -> {ok, #net_state{}}.
+-callback init( NetArg :: _ ) -> _.
 
 -callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
@@ -134,42 +399,25 @@
             pass | drop.
 
 
-
-%% Structure callbacks
-
--callback place_lst() -> [atom()].
-
--callback trsn_lst() -> [atom()].
-
--callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
-
--callback preset( Trsn :: atom() ) -> [atom()].
-
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
-            boolean().
-
--callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
-            abort | {produce, #{ atom() => [_] }}.
-
 %%====================================================================
 %% API functions
 %%====================================================================
 
 %% @doc Starts an unregistered net instance.
 %% @see start_link/4
--spec start_link( IfaceMod, Args, Options ) -> start_link_result()
-when IfaceMod :: atom(),
-     Args     :: _,
-     Options  :: [prop()].
+-spec start_link( NetMod, NetArg, Options ) -> start_link_result()
+when NetMod  :: atom(),
+     NetArg  :: _,
+     Options :: [prop()].
 
-start_link( IfaceMod, Args, Options )
-when is_atom( IfaceMod ), is_list( Options ) ->
-  gen_server:start_link( ?MODULE, {IfaceMod, Args}, Options ).
+start_link( NetMod, NetArg, Options )
+when is_atom( NetMod ), is_list( Options ) ->
+  gen_server:start_link( ?MODULE, {NetMod, NetArg}, Options ).
 
 %% @doc Starts a net instance registered as `ServerName' using the callback
-%%      module `IfaceMod' as the interface module for this net instance.
+%%      module `NetMod' as the callback module for this net instance.
 %%
-%%      The `Args' argument is later handed to the `init/1' callback. The
+%%      The `InitArg' argument is later handed to the `init/1' callback. The
 %%      `ServerName' argument can be
 %%      `{local, Name} | {global, Name} | {via, Module, ViaName}'. Internally,
 %%      the server name `ServerName' and option list `Options' are handed down
@@ -177,15 +425,15 @@ when is_atom( IfaceMod ), is_list( Options ) ->
 %%
 %% @see init/1
 
--spec start_link( ServerName, IfaceMod, Args, Options ) -> start_link_result()
+-spec start_link( ServerName, NetMod, InitArg, Options ) -> start_link_result()
 when ServerName :: server_name(),
-     IfaceMod   :: atom(),
-     Args       :: _,
+     NetMod     :: atom(),
+     InitArg    :: _,
      Options    :: [prop()].
 
-start_link( ServerName, IfaceMod, Args, Options )
-when is_tuple( ServerName ), is_atom( IfaceMod ), is_list( Options ) ->
-  gen_server:start_link( ServerName, ?MODULE, {IfaceMod, Args}, Options ).
+start_link( ServerName, NetMod, InitArg, Options )
+when is_tuple( ServerName ), is_atom( NetMod ), is_list( Options ) ->
+  gen_server:start_link( ServerName, ?MODULE, {NetMod, InitArg}, Options ).
 
 
 %% @doc Query the list of tokens on the place named `Place' in the net instance
@@ -328,19 +576,6 @@ when is_list( PlaceLst ),
 %% Net state constructor and accessor functions
 %%====================================================================
 
-%% @doc Constructs an initial instance of a state record.
-%%
-%%      Such a state record can be used to initialize a `gen_pnet' instance with
-%%      `start_link/1' or `start_link/2'.
-%%
-%% @see start_link/2
-%% @see start_link/3
--spec new( NetMod :: atom(), UsrInfo :: _ ) -> #net_state{}.
-
-new( NetMod, UsrInfo ) when is_atom( NetMod ) ->
-  #net_state{ net_mod = NetMod, usr_info = UsrInfo }.
-
-
 %% @doc Extracts the list of tokens on a given place from a given net state.
 %%
 %%      Throws an error if the list does not exist.
@@ -370,8 +605,8 @@ when OldVsn   :: _,
      NetState :: #net_state{},
      Extra    :: _.
 
-code_change( OldVsn, NetState = #net_state{ iface_mod = IfaceMod }, Extra ) ->
-  IfaceMod:code_change( OldVsn, NetState, Extra ).
+code_change( OldVsn, NetState = #net_state{ net_mod = NetMod }, Extra ) ->
+  NetMod:code_change( OldVsn, NetState, Extra ).
 
 
 %% @private
@@ -396,9 +631,9 @@ handle_call( usr_info, _From, NetState = #net_state{ usr_info = UsrInfo } ) ->
   {reply, UsrInfo, NetState};
 
 handle_call( {call, Request}, From,
-             NetState = #net_state{ iface_mod = IfaceMod } ) ->
+             NetState = #net_state{ net_mod = NetMod } ) ->
 
-  case IfaceMod:handle_call( Request, From, NetState ) of
+  case NetMod:handle_call( Request, From, NetState ) of
 
     {reply, Reply} ->
       {reply, Reply, NetState};
@@ -491,9 +726,9 @@ handle_cast( continue,
 
   end;
 
-handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
+handle_cast( {cast, Request}, NetState = #net_state{ net_mod = NetMod } ) ->
 
-  case IfaceMod:handle_cast( Request, NetState ) of
+  case NetMod:handle_cast( Request, NetState ) of
 
     noreply ->
       {noreply, NetState};
@@ -515,9 +750,9 @@ handle_cast( {cast, Request}, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 when Info     :: _,
      NetState :: #net_state{}.
 
-handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
+handle_info( Info, NetState = #net_state{ net_mod = NetMod } ) ->
 
-  case IfaceMod:handle_info( Info, NetState ) of
+  case NetMod:handle_info( Info, NetState ) of
 
     noreply ->
       {noreply, NetState};
@@ -535,12 +770,11 @@ handle_info( Info, NetState = #net_state{ iface_mod = IfaceMod } ) ->
 
 
 %% @private
--spec init( Args :: {atom(), _} ) -> {ok, #net_state{}}.
+-spec init( ArgPair :: {atom(), _} ) -> {ok, #net_state{}}.
 
-init( {IfaceMod, Args} ) ->
+init( {NetMod, NetArg} ) ->
 
-  {ok, NetState} = IfaceMod:init( Args ),
-  #net_state{ net_mod = NetMod, usr_info = UsrInfo } = NetState,
+  UsrInfo = NetMod:init( NetArg ),
 
   PlaceLst = NetMod:place_lst(),
 
@@ -552,18 +786,19 @@ init( {IfaceMod, Args} ) ->
 
   continue( self() ),
 
-  {ok, NetState#net_state{ iface_mod = IfaceMod,
-                           marking   = InitMarking,
-                           stats     = undefined,
-                           tstart    = os:system_time(),
-                           cnt       = 0 }}.
+  {ok, #net_state{ net_mod  = NetMod,
+                   usr_info = UsrInfo,
+                   marking  = InitMarking,
+                   stats    = undefined,
+                   tstart   = os:system_time(),
+                   cnt      = 0 }}.
 
 
 %% @private
 -spec terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
 
-terminate( Reason, NetState = #net_state{ iface_mod = IfaceMod } ) ->
-  IfaceMod:terminate( Reason, NetState ).
+terminate( Reason, NetState = #net_state{ net_mod = NetMod } ) ->
+  NetMod:terminate( Reason, NetState ).
   
 
 %%====================================================================
@@ -584,12 +819,12 @@ continue( Name ) ->
 when ProdMap  :: #{ atom() => [_] },
      NetState :: #net_state{}.
 
-handle_trigger( ProdMap, NetState = #net_state{ iface_mod = IfaceMod } ) ->
+handle_trigger( ProdMap, NetState = #net_state{ net_mod = NetMod } ) ->
 
   G = fun( P, TkLst, Acc ) ->
 
         F = fun( Tk, A ) ->
-              case IfaceMod:trigger( P, Tk, NetState ) of
+              case NetMod:trigger( P, Tk, NetState ) of
                 pass -> [Tk|A];
                 drop -> A
               end

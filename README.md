@@ -111,19 +111,19 @@ init_marking( _Place, _UsrInfo )  -> [].
 
 Here, we initialize the storage place with three `cookie_box` tokens. All other places are left empty.
 
-#### is_enabled/2
+#### is_enabled/3
 
 ```erlang
 -callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
             boolean().
 ```
 
-The `is_enabled/2` function is a predicate determining whether a given transition is enabled in a given mode.
+The `is_enabled/3` function is a predicate determining whether a given transition is enabled in a given mode.
 
 ```erlang
-is_enabled( a, #{ coin_slot := [coin] } )                      -> true;
-is_enabled( b, #{ signal := [sig], storage := [cookie_box] } ) -> true;
-is_enabled( _Trsn, _Mode )                                     -> false.
+is_enabled( a, #{ coin_slot := [coin] }, _UsrInfo )                      -> true;
+is_enabled( b, #{ signal := [sig], storage := [cookie_box] }, _UsrInfo ) -> true;
+is_enabled( _Trsn, _Mode, _UsrInfo )                                     -> false.
 ```
 
 Here, we state that the transition `a` is enabled if it can consume a single `coin` from the `coin_slot` place. Similarly, the transition `b` is enabled if it can consume a `sig` token from the `signal` place and a `cookie_box` token from the `storage` place. No other configuration can enable a transition. E.g., managing to get a `button` token on the `coin_slot` place will not enable any transition.

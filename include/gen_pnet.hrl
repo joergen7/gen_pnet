@@ -23,6 +23,6 @@
 %%====================================================================
 
 -record( bad_place, {name} ).
--record( net_state, {marking, net_mod, iface_mod, usr_info, stats, tstart, cnt} ).
+-record( net_state, {marking, net_mod, usr_info, stats, tstart, cnt} ).
 -record( stat, {t, fps} ).
 -record( stats, {current, hi, lo} ).
