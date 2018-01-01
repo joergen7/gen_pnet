@@ -75,9 +75,9 @@ handle_cast( _Request, _NetState ) -> noreply.
 handle_info( _Request, _NetState ) -> noreply.
 
 
--spec init( Args :: _ ) -> {ok, _}.
+-spec init( Args :: _ ) -> _.
 
-init( _Args ) -> {ok, gen_pnet:new( ?MODULE, [] )}.
+init( _Args ) -> [].
 
 
 -spec terminate( Reason :: _, NetState :: _ ) -> ok.
