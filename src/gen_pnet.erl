@@ -278,72 +278,85 @@
 %% @end
 %% -------------------------------------------------------------------
 
--module( gen_pnet ).
--behaviour( gen_server ).
+-module(gen_pnet).
+-behaviour(gen_server).
 
 %%====================================================================
 %% Exports
 %%====================================================================
 
 % API functions
--export( [start_link/3, start_link/4, ls/2, marking/1, call/2, call/3,
-          cast/2, stats/1, reply/2, reset_stats/1, stop/1, usr_info/1,
-          state_property/3] ).
+-export([start_link/3, start_link/4,
+         ls/2,
+         marking/1,
+         call/2, call/3,
+         cast/2,
+         stats/1,
+         reply/2,
+         reset_stats/1,
+         stop/1,
+         usr_info/1,
+         state_property/3]).
 
 % Net state constructor and accessor functions
--export( [get_ls/2, get_usr_info/1, get_stats/1] ).
+-export([get_ls/2, get_usr_info/1, get_stats/1]).
 
 % gen_server callbacks
--export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2,
-          init/1, terminate/2] ).
-
+-export([code_change/3,
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         init/1,
+         terminate/2]).
 
 %%====================================================================
 %% Includes
 %%====================================================================
 
--include( "gen_pnet.hrl" ).
+-include("gen_pnet.hrl").
 
 %%====================================================================
 %% Type definitions
 %%====================================================================
 
--type name() :: atom()
-              | {atom(), atom()}
-              | {global, _}
-              | {via, atom(), _}
-              | pid().
+-type name() :: atom() |
+                {atom(), atom()} |
+                {global, _} |
+                {via, atom(), _} |
+                pid().
 
--type server_name() :: {local, atom()}
-                     | {global, atom()}
-                     | {via, atom(), _}.
+-type server_name() :: {local, atom()} |
+                       {global, atom()} |
+                       {via, atom(), _}.
 
--type start_link_result() :: {ok, pid()}
-                | ignore
-                | {error, _}.
+-type start_link_result() :: {ok, pid()} |
+                             ignore |
+                             {error, _}.
 
--type handle_call_request() :: {ls, atom()}
-                             | marking
-                             | usr_info
-                             | {call, _}
-                             | stats
-                             | reset_stats.
+-type handle_call_request() :: {ls, atom()} |
+                               marking |
+                               usr_info |
+                               {call, _} |
+                               stats |
+                               reset_stats.
 
--type handle_call_result() :: {reply, _, #net_state{}}
-                            | {noreply, #net_state{}}
-                            | {stop, _, _, #net_state{}}.
+-type handle_call_result() :: {reply, _, #net_state{}} |
+                              {noreply, #net_state{}} |
+                              {stop, _, _, #net_state{}}.
 
+-type handle_cast_request() :: continue |
+                               {cast, _}.
 
--type handle_cast_request() :: continue
-                             | {cast, _}.
+-type handle_cast_result() :: {noreply, #net_state{}} |
+                              {stop, _, #net_state{}}.
 
--type handle_cast_result() :: {noreply, #net_state{}}
-                            | {stop, _, #net_state{}}.
+-type handle_info_result() :: {noreply, #net_state{}} |
+                              {stop, _, #net_state{}}.
 
--type handle_info_result() :: {noreply, #net_state{}}
-                            | {stop, _, #net_state{}}.
-
--type prop() :: atom() | {atom(), _}.
+-type prop() :: {debug, [log | statistics | trace | {_, _}]} |
+                {hibernate_after, infinity | non_neg_integer()} |
+                {spawn_opt, [link | monitor | {_, _}]} |
+                {timeout, infinity | non_neg_integer()}.
 
 %%====================================================================
 %% Callback definitions
@@ -351,51 +364,51 @@
 
 %% Structure callbacks
 
+
 -callback place_lst() -> [atom()].
 
 -callback trsn_lst() -> [atom()].
 
--callback init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
+-callback init_marking(Place :: atom(), UsrInfo :: _) -> [_].
 
--callback preset( Trsn :: atom() ) -> [atom()].
+-callback preset(Trsn :: atom()) -> [atom()].
 
--callback is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
-            boolean().
+-callback is_enabled(Trsn :: atom(), Mode :: #{atom() => [_]}, UsrInfo :: _) ->
+              boolean().
 
--callback fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
-            abort | {produce, #{ atom() => [_] }}.
-
+-callback fire(Trsn :: atom(), Mode :: #{atom() => [_]}, UsrInfo :: _) ->
+              abort | {produce, #{atom() => [_]}}.
 
 %% Interface callbacks
 
--callback code_change( OldVsn :: _, NetState :: #net_state{}, Extra :: _ ) ->
-            {ok, #net_state{}} | {error, _}.
+-callback code_change(OldVsn :: _, NetState :: #net_state{}, Extra :: _) ->
+              {ok, #net_state{}} | {error, _}.
 
--callback handle_call( Request :: _, From :: {pid(), _},
-                       NetState :: #net_state{} ) ->
-              {reply, _}
-            | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
-            | noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _, _}.
+-callback handle_call(Request :: _,
+                      From :: {pid(), _},
+                      NetState :: #net_state{}) ->
+              {reply, _} |
+              {reply, _, #{atom() => [_]}, #{atom() => [_]}} |
+              noreply |
+              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {stop, _, _}.
 
--callback handle_cast( Request :: _, NetState :: #net_state{} ) ->
-              noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _}.
+-callback handle_cast(Request :: _, NetState :: #net_state{}) ->
+              noreply |
+              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {stop, _}.
 
--callback handle_info( Info :: _, NetState :: #net_state{} ) ->
-              noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _}.
+-callback handle_info(Info :: _, NetState :: #net_state{}) ->
+              noreply |
+              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {stop, _}.
 
--callback init( NetArg :: _ ) -> _.
+-callback init(NetArg :: _) -> _.
 
--callback terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+-callback terminate(Reason :: _, NetState :: #net_state{}) -> ok.
 
--callback trigger( Place :: atom(), Token :: _, NetState :: #net_state{} ) ->
-            pass | drop.
-
+-callback trigger(Place :: atom(), Token :: _, NetState :: #net_state{}) ->
+              pass | drop.
 
 %%====================================================================
 %% API functions
@@ -403,14 +416,15 @@
 
 %% @doc Starts an unregistered net instance.
 %% @see start_link/4
--spec start_link( NetMod, NetArg, Options ) -> start_link_result()
-when NetMod  :: atom(),
-     NetArg  :: _,
-     Options :: [prop()].
+-spec start_link(NetMod, NetArg, Options) -> start_link_result()
+              when NetMod :: atom(),
+                   NetArg :: _,
+                   Options :: [prop()].
 
-start_link( NetMod, NetArg, Options )
-when is_atom( NetMod ), is_list( Options ) ->
-  gen_server:start_link( ?MODULE, {NetMod, NetArg}, Options ).
+start_link(NetMod, NetArg, Options)
+  when is_atom(NetMod), is_list(Options) ->
+    gen_server:start_link(?MODULE, {NetMod, NetArg}, Options).
+
 
 %% @doc Starts a net instance registered as `ServerName' using the callback
 %%      module `NetMod' as the callback module for this net instance.
@@ -423,15 +437,16 @@ when is_atom( NetMod ), is_list( Options ) ->
 %%
 %% @see init/1
 
--spec start_link( ServerName, NetMod, InitArg, Options ) -> start_link_result()
-when ServerName :: server_name(),
-     NetMod     :: atom(),
-     InitArg    :: _,
-     Options    :: [prop()].
 
-start_link( ServerName, NetMod, InitArg, Options )
-when is_tuple( ServerName ), is_atom( NetMod ), is_list( Options ) ->
-  gen_server:start_link( ServerName, ?MODULE, {NetMod, InitArg}, Options ).
+-spec start_link(ServerName, NetMod, InitArg, Options) -> start_link_result()
+              when ServerName :: server_name(),
+                   NetMod :: atom(),
+                   InitArg :: _,
+                   Options :: [prop()].
+
+start_link(ServerName, NetMod, InitArg, Options)
+  when is_tuple(ServerName), is_atom(NetMod), is_list(Options) ->
+    gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options).
 
 
 %% @doc Query the list of tokens on the place named `Place' in the net instance
@@ -441,11 +456,12 @@ when is_tuple( ServerName ), is_atom( NetMod ), is_list( Options ) ->
 %%      return value is either `{ok, [_]}' if the place exists or a
 %%      `{error, #bad_place{}}' tuple.
 
--spec ls( Name, Place ) -> {ok, [_]} | {error, #bad_place{}}
-when Name  :: name(),
-     Place :: atom().
 
-ls( Name, Place ) when is_atom( Place ) -> gen_server:call( Name, {ls, Place} ).
+-spec ls(Name, Place) -> {ok, [_]} | {error, #bad_place{}}
+              when Name :: name(),
+                   Place :: atom().
+
+ls(Name, Place) when is_atom(Place) -> gen_server:call(Name, {ls, Place}).
 
 
 %% @doc Query the marking map of the net instance identified as `Name'
@@ -454,16 +470,18 @@ ls( Name, Place ) when is_atom( Place ) -> gen_server:call( Name, {ls, Place} ).
 %%      Herein, `Name' can be a process id or a registered process name. The
 %%      return value is the Petri net's marking map.
 
--spec marking( Name :: name() ) -> #{ atom() => [_] }.
 
-marking( Name ) -> gen_server:call( Name, marking ).
+-spec marking(Name :: name()) -> #{atom() => [_]}.
+
+marking(Name) -> gen_server:call(Name, marking).
 
 
 %% @doc Query the user info term from the net instance identified as `Name'.
 
--spec usr_info( Name :: name() ) -> _.
 
-usr_info( Name ) -> gen_server:call( Name, usr_info ).
+-spec usr_info(Name :: name()) -> _.
+
+usr_info(Name) -> gen_server:call(Name, usr_info).
 
 
 %% @doc Query the statistics gathered by the net instance identified as `Name'.
@@ -472,22 +490,26 @@ usr_info( Name ) -> gen_server:call( Name, usr_info ).
 %%      `#stat{}' record instances characterizing the current, maximum, and
 %%      minimum throughput of this net in transition firings per second.
 
--spec stats( Name :: name() ) -> #stats{}.
 
-stats( Name ) -> gen_server:call( Name, stats ).
+-spec stats(Name :: name()) -> #stats{}.
+
+stats(Name) -> gen_server:call(Name, stats).
+
 
 %% @doc Requests the net instance identified as `Name' to clear its stats.
 
--spec reset_stats( Name :: name() ) -> ok.
 
-reset_stats( Name ) -> gen_server:call( Name, reset_stats ).
+-spec reset_stats(Name :: name()) -> ok.
+
+reset_stats(Name) -> gen_server:call(Name, reset_stats).
 
 
 %% @doc Requests the net instance identified as `Name' to stop.
 
--spec stop( Name :: name() ) -> ok.
 
-stop( Name ) -> gen_server:stop( Name ).
+-spec stop(Name :: name()) -> ok.
+
+stop(Name) -> gen_server:stop(Name).
 
 
 %% @doc Synchronously send the term `Request' to the net instance identified as
@@ -497,9 +519,10 @@ stop( Name ) -> gen_server:stop( Name ).
 %%
 %% @see call/3
 
--spec call( Name :: name(), Request :: _ ) -> _.
 
-call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
+-spec call(Name :: name(), Request :: _) -> _.
+
+call(Name, Request) -> gen_server:call(Name, {call, Request}).
 
 
 %% @doc Synchronously send the term `Request' to the net instance identified as
@@ -509,16 +532,17 @@ call( Name, Request ) -> gen_server:call( Name, {call, Request} ).
 %%      the `handle_call/3' callback function of the interface module. Herein
 %%      `Timeout' must be a non-negative integer or the atom `infinity'.
 
--spec call( Name, Request, Timeout ) -> _
-when Name    :: name(),
-     Request :: _,
-     Timeout :: non_neg_integer() | infinity.
 
-call( Name, Request, Timeout ) when is_integer( Timeout ), Timeout >= 0 ->
-  gen_server:call( Name, {call, Request}, Timeout );
+-spec call(Name, Request, Timeout) -> _
+              when Name :: name(),
+                   Request :: _,
+                   Timeout :: non_neg_integer() | infinity.
 
-call( Name, Request, infinity ) ->
-  gen_server:call( Name, {call, Request}, infinity ).
+call(Name, Request, Timeout) when is_integer(Timeout), Timeout >= 0 ->
+    gen_server:call(Name, {call, Request}, Timeout);
+
+call(Name, Request, infinity) ->
+    gen_server:call(Name, {call, Request}, infinity).
 
 
 %% @doc Asynchronously send the term `Request' to the net instance identified as
@@ -528,10 +552,11 @@ call( Name, Request, infinity ) ->
 %%      interface module. Note that the cast succeeds even if a non-existing
 %%      process is addressed or the net instance is down.
 
--spec cast( Name :: name(), Request :: _ ) -> ok.
 
-cast( Name, Request ) ->
-  gen_server:cast( Name, {cast, Request} ).
+-spec cast(Name :: name(), Request :: _) -> ok.
+
+cast(Name, Request) ->
+    gen_server:cast(Name, {cast, Request}).
 
 
 %% @doc Sends a reply to a calling client process.
@@ -541,10 +566,14 @@ cast( Name, Request ) ->
 %%
 %% @see handle_call/3
 
--spec reply( Client :: {pid(), _}, Reply :: _ ) -> _.
 
-reply( Client, Reply ) when is_tuple( Client ) ->
-  gen_server:reply( Client, Reply ).
+-spec reply(Client, Reply) -> Result
+              when Client :: {pid(), gen_server:reply_tag()},
+                   Reply :: _,
+                   Result :: ok.
+
+reply(Client, Reply) when is_tuple(Client) ->
+    gen_server:reply(Client, Reply).
 
 
 %% @doc Checks if a predicate about the state of the net holds.
@@ -556,397 +585,413 @@ reply( Client, Reply ) when is_tuple( Client ) ->
 %%      The predicate is expected to return either `ok' or `{error, Reason}'
 %%      where Reason can be any Erlang term.
 
--spec state_property( Name, Pred, PlaceLst ) -> ok | {error, Reason}
-when Name     :: name(),
-     Pred     :: fun( ( ... ) -> ok | {error, Reason} ),
-     PlaceLst :: [atom()].
 
-state_property( Name, Pred, PlaceLst )
-when is_list( PlaceLst ),
-     is_function( Pred, length( PlaceLst ) ) ->
+-spec state_property(Name, Pred, PlaceLst) -> ok | {error, Reason}
+              when Name :: name(),
+                   Pred :: fun((...) -> ok | {error, Reason}),
+                   PlaceLst :: [atom()].
 
-  Marking = gen_pnet:marking( Name ),
-  ArgLst = [maps:get( Place, Marking ) || Place <- PlaceLst],
-  apply( Pred, ArgLst ).
+state_property(Name, Pred, PlaceLst)
+  when is_list(PlaceLst),
+       is_function(Pred, length(PlaceLst)) ->
+
+    Marking = gen_pnet:marking(Name),
+    ArgLst = [ maps:get(Place, Marking) || Place <- PlaceLst ],
+    apply(Pred, ArgLst).
 
 
 %%====================================================================
 %% Net state constructor and accessor functions
 %%====================================================================
 
+
 %% @doc Extracts the list of tokens on a given place from a given net state.
 %%
 %%      Throws an error if the list does not exist.
--spec get_ls( Place :: atom(), NetState :: #net_state{} ) -> [_].
+-spec get_ls(Place :: atom(), NetState :: #net_state{}) -> [_].
 
-get_ls( Place, #net_state{ marking = Marking } ) -> maps:get( Place, Marking ).
+get_ls(Place, #net_state{marking = Marking}) -> maps:get(Place, Marking).
+
 
 %% @doc Extracts the user info field from a given net state.
--spec get_usr_info( NetState :: #net_state{} ) -> _.
+-spec get_usr_info(NetState :: #net_state{}) -> _.
 
-get_usr_info( #net_state{ usr_info = UsrInfo } ) -> UsrInfo.
+get_usr_info(#net_state{usr_info = UsrInfo}) -> UsrInfo.
 
 
 %% @doc Extracts the stats field from a given net instance.
--spec get_stats( NetState :: #net_state{} ) -> #stats{}.
+-spec get_stats(NetState :: #net_state{}) -> #stats{}.
 
-get_stats( #net_state{ stats = Stats } ) -> Stats.
+get_stats(#net_state{stats = Stats}) -> Stats.
 
 
 %%====================================================================
 %% Generic server callback functions
 %%====================================================================
 
-%% @private
--spec code_change( OldVsn, NetState, Extra ) -> {ok, #net_state{}} | {error, _}
-when OldVsn   :: _,
-     NetState :: #net_state{},
-     Extra    :: _.
-
-code_change( OldVsn, NetState = #net_state{ net_mod = NetMod }, Extra ) ->
-  NetMod:code_change( OldVsn, NetState, Extra ).
-
 
 %% @private
--spec handle_call( Request, From, NetState ) -> handle_call_result()
-when Request  :: handle_call_request(),
-     From     :: {pid(), _},
-     NetState :: #net_state{}.
+-spec code_change(OldVsn, NetState, Extra) -> {ok, #net_state{}} | {error, _}
+              when OldVsn :: _,
+                   NetState :: #net_state{},
+                   Extra :: _.
 
-handle_call( {ls, Place}, _From, NetState = #net_state{ marking = Marking } ) ->
-
-  Reply = case maps:is_key( Place, Marking ) of
-            true  -> {ok, maps:get( Place, Marking )};
-            false -> {error, #bad_place{ name = Place }}
-          end,
-
-  {reply, Reply, NetState};
-
-handle_call( marking, _From, NetState = #net_state{ marking = Marking } ) ->
-  {reply, Marking, NetState};
-
-handle_call( usr_info, _From, NetState = #net_state{ usr_info = UsrInfo } ) ->
-  {reply, UsrInfo, NetState};
-
-handle_call( {call, Request}, From,
-             NetState = #net_state{ net_mod = NetMod } ) ->
-
-  case NetMod:handle_call( Request, From, NetState ) of
-
-    {reply, Reply} ->
-      {reply, Reply, NetState};
-    
-    {reply, Reply, CnsMap, ProdMap} ->
-      NetState1 = cns( CnsMap, NetState ),
-      NetState2 = handle_trigger( ProdMap, NetState1 ),
-      continue( self() ),
-      {reply, Reply, NetState2};
-
-    noreply ->
-      {noreply, NetState};
-
-    {noreply, CnsMap, ProdMap} ->
-      NetState1 = cns( CnsMap, NetState ),
-      NetState2 = handle_trigger( ProdMap, NetState1 ),
-      continue( self() ),
-      {noreply, NetState2};
-
-    {stop, Reason, Reply} ->
-      {stop, Reason, Reply, NetState}
-
-  end;
-
-handle_call( stats, _From, NetState = #net_state{ stats = Stats } ) ->
-  {reply, Stats, NetState};
-
-handle_call( reset_stats, _From, NetState ) ->
-  {reply, ok, NetState#net_state{ stats = undefined }}.
+code_change(OldVsn, NetState = #net_state{net_mod = NetMod}, Extra) ->
+    NetMod:code_change(OldVsn, NetState, Extra).
 
 
 %% @private
--spec handle_cast( Request, NetState ) -> handle_cast_result()
-when Request  :: handle_cast_request(),
-     NetState :: #net_state{}.
+-spec handle_call(Request, From, NetState) -> handle_call_result()
+              when Request :: handle_call_request(),
+                   From :: {pid(), _},
+                   NetState :: #net_state{}.
 
-handle_cast( continue,
-             NetState = #net_state{ stats  = Stats,
-                                    tstart = T1,
-                                    cnt    = Cnt } ) ->
-  
-  case progress( NetState ) of
+handle_call({ls, Place}, _From, NetState = #net_state{marking = Marking}) ->
 
-    abort ->
-      {noreply, NetState};
+    Reply = case maps:is_key(Place, Marking) of
+                true -> {ok, maps:get(Place, Marking)};
+                false -> {error, #bad_place{name = Place}}
+            end,
 
-    {delta, Mode, Pm} ->
+    {reply, Reply, NetState};
 
-      NetState1 = cns( Mode, NetState ),
-      NetState2 = handle_trigger( Pm, NetState1 ),
-      continue( self() ),
+handle_call(marking, _From, NetState = #net_state{marking = Marking}) ->
+    {reply, Marking, NetState};
 
-      NetState3 = if
-                    Cnt < 1000 -> NetState2#net_state{ cnt = Cnt+1 };
-                    true       ->
+handle_call(usr_info, _From, NetState = #net_state{usr_info = UsrInfo}) ->
+    {reply, UsrInfo, NetState};
 
-                      T2 = os:system_time(),
-                      Tmean = round( ( T1+T2 )/2 ),
-                      Tdelta = T2-T1,
-                      CurrentFps = 1000000000000/Tdelta,
+handle_call({call, Request},
+            From,
+            NetState = #net_state{net_mod = NetMod}) ->
 
-                      Current = #stat{ t = Tmean, fps = CurrentFps },
+    case NetMod:handle_call(Request, From, NetState) of
 
-                      {Hi1, Lo1} = case Stats of
-                                     undefined -> {Current, Current};
-                                     #stats{ hi = H, lo = L } -> {H, L}
-                                   end,
+        {reply, Reply} ->
+            {reply, Reply, NetState};
 
-                      #stat{ fps = HiFps } = Hi1,
-                      #stat{ fps = LoFps } = Lo1,
+        {reply, Reply, CnsMap, ProdMap} ->
+            NetState1 = cns(CnsMap, NetState),
+            NetState2 = handle_trigger(ProdMap, NetState1),
+            continue(self()),
+            {reply, Reply, NetState2};
 
-                      Hi2 = if
-                              CurrentFps > HiFps -> Current;
-                              true               -> Hi1
-                            end,
+        noreply ->
+            {noreply, NetState};
 
-                      Lo2 = if
-                              CurrentFps < LoFps -> Current;
-                              true               -> Lo1
-                            end,
+        {noreply, CnsMap, ProdMap} ->
+            NetState1 = cns(CnsMap, NetState),
+            NetState2 = handle_trigger(ProdMap, NetState1),
+            continue(self()),
+            {noreply, NetState2};
 
-                      NetState2#net_state{ stats  = #stats{ current = Current,
-                                                            hi      = Hi2,
-                                                            lo      = Lo2 },
-                                           tstart = T2,
-                                           cnt    = 0 }
-                  end,
+        {stop, Reason, Reply} ->
+            {stop, Reason, Reply, NetState}
 
-      {noreply, NetState3}
+    end;
 
-  end;
+handle_call(stats, _From, NetState = #net_state{stats = Stats}) ->
+    {reply, Stats, NetState};
 
-handle_cast( {cast, Request}, NetState = #net_state{ net_mod = NetMod } ) ->
-
-  case NetMod:handle_cast( Request, NetState ) of
-
-    noreply ->
-      {noreply, NetState};
-
-    {noreply, CnsMap, ProdMap} ->
-      NetState1 = cns( CnsMap, NetState ),
-      NetState2 = handle_trigger( ProdMap, NetState1 ),
-      continue( self() ),
-      {noreply, NetState2};
-
-    {stop, Reason} ->
-      {stop, Reason, NetState}
-
-  end.
+handle_call(reset_stats, _From, NetState) ->
+    {reply, ok, NetState#net_state{stats = undefined}}.
 
 
 %% @private
--spec handle_info( Info, NetState ) -> handle_info_result()
-when Info     :: _,
-     NetState :: #net_state{}.
+-spec handle_cast(Request, NetState) -> handle_cast_result()
+              when Request :: handle_cast_request(),
+                   NetState :: #net_state{}.
 
-handle_info( Info, NetState = #net_state{ net_mod = NetMod } ) ->
+handle_cast(continue,
+            NetState = #net_state{
+                         stats = Stats,
+                         tstart = T1,
+                         cnt = Cnt
+                        }) ->
 
-  case NetMod:handle_info( Info, NetState ) of
+    case progress(NetState) of
 
-    noreply ->
-      {noreply, NetState};
+        abort ->
+            {noreply, NetState};
 
-    {noreply, CnsMap, ProdMap} ->
-      NetState1 = cns( CnsMap, NetState ),
-      NetState2 = handle_trigger( ProdMap, NetState1 ),
-      continue( self() ),
-      {noreply, NetState2};
+        {delta, Mode, Pm} ->
 
-    {stop, Reason} ->
-      {stop, Reason, NetState}
+            NetState1 = cns(Mode, NetState),
+            NetState2 = handle_trigger(Pm, NetState1),
+            continue(self()),
 
-  end.
+            NetState3 = if
+                            Cnt < 1000 -> NetState2#net_state{cnt = Cnt + 1};
+                            true ->
+
+                                T2 = os:system_time(),
+                                Tmean = round((T1 + T2) / 2),
+                                Tdelta = T2 - T1,
+                                CurrentFps = 1000000000000 / Tdelta,
+
+                                Current = #stat{t = Tmean, fps = CurrentFps},
+
+                                {Hi1, Lo1} = case Stats of
+                                                 undefined -> {Current, Current};
+                                                 #stats{hi = H, lo = L} -> {H, L}
+                                             end,
+
+                                #stat{fps = HiFps} = Hi1,
+                                #stat{fps = LoFps} = Lo1,
+
+                                Hi2 = if
+                                          CurrentFps > HiFps -> Current;
+                                          true -> Hi1
+                                      end,
+
+                                Lo2 = if
+                                          CurrentFps < LoFps -> Current;
+                                          true -> Lo1
+                                      end,
+
+                                NetState2#net_state{
+                                  stats = #stats{
+                                            current = Current,
+                                            hi = Hi2,
+                                            lo = Lo2
+                                           },
+                                  tstart = T2,
+                                  cnt = 0
+                                 }
+                        end,
+
+            {noreply, NetState3}
+
+    end;
+
+handle_cast({cast, Request}, NetState = #net_state{net_mod = NetMod}) ->
+
+    case NetMod:handle_cast(Request, NetState) of
+
+        noreply ->
+            {noreply, NetState};
+
+        {noreply, CnsMap, ProdMap} ->
+            NetState1 = cns(CnsMap, NetState),
+            NetState2 = handle_trigger(ProdMap, NetState1),
+            continue(self()),
+            {noreply, NetState2};
+
+        {stop, Reason} ->
+            {stop, Reason, NetState}
+
+    end.
 
 
 %% @private
--spec init( ArgPair :: {atom(), _} ) -> {ok, #net_state{}}.
+-spec handle_info(Info, NetState) -> handle_info_result()
+              when Info :: _,
+                   NetState :: #net_state{}.
 
-init( {NetMod, NetArg} ) ->
+handle_info(Info, NetState = #net_state{net_mod = NetMod}) ->
 
-  UsrInfo = NetMod:init( NetArg ),
+    case NetMod:handle_info(Info, NetState) of
 
-  PlaceLst = NetMod:place_lst(),
+        noreply ->
+            {noreply, NetState};
 
-  F = fun( P, Acc ) ->
-        Acc#{ P => NetMod:init_marking( P, UsrInfo ) }
-      end,
+        {noreply, CnsMap, ProdMap} ->
+            NetState1 = cns(CnsMap, NetState),
+            NetState2 = handle_trigger(ProdMap, NetState1),
+            continue(self()),
+            {noreply, NetState2};
 
-  InitMarking = lists:foldl( F, #{}, PlaceLst ),
+        {stop, Reason} ->
+            {stop, Reason, NetState}
 
-  continue( self() ),
-
-  {ok, #net_state{ net_mod  = NetMod,
-                   usr_info = UsrInfo,
-                   marking  = InitMarking,
-                   stats    = undefined,
-                   tstart   = os:system_time(),
-                   cnt      = 0 }}.
+    end.
 
 
 %% @private
--spec terminate( Reason :: _, NetState :: #net_state{} ) -> ok.
+-spec init(ArgPair :: {atom(), _}) -> {ok, #net_state{}}.
 
-terminate( Reason, NetState = #net_state{ net_mod = NetMod } ) ->
-  NetMod:terminate( Reason, NetState ).
-  
+init({NetMod, NetArg}) ->
+
+    UsrInfo = NetMod:init(NetArg),
+
+    PlaceLst = NetMod:place_lst(),
+
+    F = fun(P, Acc) ->
+                Acc#{P => NetMod:init_marking(P, UsrInfo)}
+        end,
+
+    InitMarking = lists:foldl(F, #{}, PlaceLst),
+
+    continue(self()),
+
+    {ok, #net_state{
+           net_mod = NetMod,
+           usr_info = UsrInfo,
+           marking = InitMarking,
+           stats = undefined,
+           tstart = os:system_time(),
+           cnt = 0
+          }}.
+
+
+%% @private
+-spec terminate(Reason :: _, NetState :: #net_state{}) -> ok.
+
+terminate(Reason, NetState = #net_state{net_mod = NetMod}) ->
+    NetMod:terminate(Reason, NetState).
+
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
+
 %% @doc Continue making progress in net instance under process id `Name'.
 %%
 %%      Note that continuing succeeds even if a non-existing process is
 %%      addressed or the net instance is down.
--spec continue( Name :: name() ) -> ok.
+-spec continue(Name :: pid()) -> ok.
 
-continue( Name ) ->
-  gen_server:cast( Name, continue ).
-
-
--spec handle_trigger( ProdMap, NetState ) -> #net_state{}
-when ProdMap  :: #{ atom() => [_] },
-     NetState :: #net_state{}.
-
-handle_trigger( ProdMap, NetState = #net_state{ net_mod = NetMod } ) ->
-
-  G = fun( P, TkLst, Acc ) ->
-
-        F = fun( Tk, A ) ->
-              case NetMod:trigger( P, Tk, NetState ) of
-                pass -> [Tk|A];
-                drop -> A
-              end
-            end,
-
-        TkLst1 = lists:foldl( F, [], TkLst ),
-        Acc#{ P => TkLst1 }
-
-      end,
-
-  ProdMap1 = maps:fold( G, #{}, ProdMap ),
-  prd( ProdMap1, NetState ).
+continue(Name) ->
+    gen_server:cast(Name, continue).
 
 
--spec cns( Mode, NetState ) -> #net_state{}
-when Mode     :: #{ atom() => [_] },
-     NetState :: #net_state{}.
+-spec handle_trigger(ProdMap, NetState) -> #net_state{}
+              when ProdMap :: #{atom() => [_]},
+                   NetState :: #net_state{}.
 
-cns( Mode, NetState = #net_state{ marking = Marking } ) ->
+handle_trigger(ProdMap, NetState = #net_state{net_mod = NetMod}) ->
 
-  F = fun( T, TkLst, Acc ) ->
-        Acc#{ T => TkLst--maps:get( T, Mode, [] ) }
-      end,
+    G = fun(P, TkLst, Acc) ->
 
-  NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
+                F = fun(Tk, A) ->
+                            case NetMod:trigger(P, Tk, NetState) of
+                                pass -> [Tk | A];
+                                drop -> A
+                            end
+                    end,
 
+                TkLst1 = lists:foldl(F, [], TkLst),
+                Acc#{P => TkLst1}
 
--spec prd( ProdMap, NetState ) -> #net_state{}
-when ProdMap  :: #{ atom() => [_] },
-     NetState :: #net_state{}.
+        end,
 
-prd( ProdMap, NetState = #net_state{ marking = Marking } ) ->
-
-  F = fun( T, TkLst, Acc ) ->
-        Acc#{ T => TkLst++maps:get( T, ProdMap, [] ) }
-      end,
-
-  NetState#net_state{ marking = maps:fold( F, #{}, Marking ) }.
+    ProdMap1 = maps:fold(G, #{}, ProdMap),
+    prd(ProdMap1, NetState).
 
 
--spec progress( NetState :: #net_state{} ) ->
-        abort | {delta, #{ atom() => [_]}, #{ atom() => [_] }}.
+-spec cns(Mode, NetState) -> #net_state{}
+              when Mode :: #{atom() => [_]},
+                   NetState :: #net_state{}.
 
-progress( #net_state{ marking  = Marking,
-                      net_mod  = NetMod,
-                      usr_info = UsrInfo } ) ->
+cns(Mode, NetState = #net_state{marking = Marking}) ->
 
-  % get all transitions in the net
-  TrsnLst = NetMod:trsn_lst(),
+    F = fun(T, TkLst, Acc) ->
+                Acc#{T => TkLst -- maps:get(T, Mode, [])}
+        end,
 
-  F = fun( T, Acc ) ->
-        Preset = NetMod:preset( T ),
-        MLst = enum_mode( Preset, Marking ),
-        IsEnabled = fun( M ) -> NetMod:is_enabled( T, M, UsrInfo ) end,
-        EnabledMLst = lists:filter( IsEnabled, MLst ),
-        case EnabledMLst of
-          []    -> Acc;
-          [_|_] -> Acc#{ T => EnabledMLst }
-        end
-      end,
-
-  % derive a map listing all enabled modes for each transition
-  ModeMap = lists:foldl( F, #{}, TrsnLst ),
-
-  % delegate enabled mode map to attempt_progress function
-  attempt_progress( ModeMap, NetMod, UsrInfo ).
+    NetState#net_state{marking = maps:fold(F, #{}, Marking)}.
 
 
--spec attempt_progress( ModeMap, NetMod, UsrInfo ) -> abort | {delta, _, _}
-when ModeMap :: #{ atom() => [_] },
-     NetMod  :: atom(),
-     UsrInfo :: _.
+-spec prd(ProdMap, NetState) -> #net_state{}
+              when ProdMap :: #{atom() => [_]},
+                   NetState :: #net_state{}.
 
-attempt_progress( ModeMap, NetMod, UsrInfo ) ->
+prd(ProdMap, NetState = #net_state{marking = Marking}) ->
 
-  case maps:size( ModeMap ) of
+    F = fun(T, TkLst, Acc) ->
+                Acc#{T => TkLst ++ maps:get(T, ProdMap, [])}
+        end,
 
-    0 -> abort;
-    _ ->
-
-      TrsnLst = maps:keys( ModeMap ),
-      Trsn = lib_combin:pick_from( TrsnLst ),
-      #{ Trsn := ModeLst } = ModeMap,
-      Mode = lib_combin:pick_from( ModeLst ),
-
-      case NetMod:fire( Trsn, Mode, UsrInfo ) of
-
-        {produce, ProdMap} ->
-          {delta, Mode, ProdMap};
-        
-        abort ->
-          ModeLst1 = ModeLst--[Mode],
-          case ModeLst1 of
-            []    ->
-              attempt_progress( maps:remove( Trsn, ModeMap ), NetMod, UsrInfo );
-            [_|_] ->
-              attempt_progress( ModeMap#{ Trsn := ModeLst1 }, NetMod, UsrInfo )
-          end
-
-      end
-  end.
+    NetState#net_state{marking = maps:fold(F, #{}, Marking)}.
 
 
--spec enum_mode( Preset, Marking ) -> [#{ atom() => [_] }]
-when Preset  :: [atom()],
-     Marking :: #{ atom() => [_] }.
+-spec progress(NetState :: #net_state{}) ->
+          abort | {delta, #{atom() => [_]}, #{atom() => [_]}}.
 
-enum_mode( Preset, Marking ) ->
+progress(#net_state{
+           marking = Marking,
+           net_mod = NetMod,
+           usr_info = UsrInfo
+          }) ->
 
-  F = fun( P, Acc ) ->
-        N = maps:get( P, Acc, 0 ),
-        Acc#{ P => N+1 }
-      end,
+    % get all transitions in the net
+    TrsnLst = NetMod:trsn_lst(),
 
-  % gather count map
-  CountMap = lists:foldl( F, #{}, Preset ),
+    F = fun(T, Acc) ->
+                Preset = NetMod:preset(T),
+                MLst = enum_mode(Preset, Marking),
+                IsEnabled = fun(M) -> NetMod:is_enabled(T, M, UsrInfo) end,
+                EnabledMLst = lists:filter(IsEnabled, MLst),
+                case EnabledMLst of
+                    [] -> Acc;
+                    [_ | _] -> Acc#{T => EnabledMLst}
+                end
+        end,
 
-  G = fun( P, N, Acc ) ->
-        #{ P := TkLst } = Marking,
-        Acc#{ P => lib_combin:cnr( N, TkLst ) }
-      end,
+    % derive a map listing all enabled modes for each transition
+    ModeMap = lists:foldl(F, #{}, TrsnLst),
 
-  % enumerate drawing combinations for each preset place individually
-  CmbMap = maps:fold( G, #{}, CountMap ),
+    % delegate enabled mode map to attempt_progress function
+    attempt_progress(ModeMap, NetMod, UsrInfo).
 
-  % enumerate permutations of map containing drawing combinations
-  lib_combin:permut_map( CmbMap ).
+
+-spec attempt_progress(ModeMap, NetMod, UsrInfo) -> abort | {delta, _, _}
+              when ModeMap :: #{atom() => [_]},
+                   NetMod :: atom(),
+                   UsrInfo :: _.
+
+attempt_progress(ModeMap, NetMod, UsrInfo) ->
+
+    case maps:size(ModeMap) of
+
+        0 -> abort;
+        _ ->
+
+            TrsnLst = maps:keys(ModeMap),
+            Trsn = lib_combin:pick_from(TrsnLst),
+            #{Trsn := ModeLst} = ModeMap,
+            Mode = lib_combin:pick_from(ModeLst),
+
+            case NetMod:fire(Trsn, Mode, UsrInfo) of
+
+                {produce, ProdMap} ->
+                    {delta, Mode, ProdMap};
+
+                abort ->
+                    ModeLst1 = ModeLst -- [Mode],
+                    case ModeLst1 of
+                        [] ->
+                            attempt_progress(maps:remove(Trsn, ModeMap), NetMod, UsrInfo);
+                        [_ | _] ->
+                            attempt_progress(ModeMap#{Trsn := ModeLst1}, NetMod, UsrInfo)
+                    end
+
+            end
+    end.
+
+
+-spec enum_mode(Preset, Marking) -> [#{atom() => [_]}]
+              when Preset :: [atom()],
+                   Marking :: #{atom() => [_]}.
+
+enum_mode(Preset, Marking) ->
+
+    F = fun(P, Acc) ->
+                N = maps:get(P, Acc, 0),
+                Acc#{P => N + 1}
+        end,
+
+    % gather count map
+    CountMap = lists:foldl(F, #{}, Preset),
+
+    G = fun(P, N, Acc) ->
+                #{P := TkLst} = Marking,
+                Acc#{P => lib_combin:cnr(N, TkLst)}
+        end,
+
+    % enumerate drawing combinations for each preset place individually
+    CmbMap = maps:fold(G, #{}, CountMap),
+
+    % enumerate permutations of map containing drawing combinations
+    lib_combin:permut_map(CmbMap).

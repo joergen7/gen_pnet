@@ -1,27 +1,34 @@
 %% -*- erlang -*-
 
--module( default_pnet ).
--behaviour( gen_pnet ).
-
+-module(default_pnet).
+-behaviour(gen_pnet).
 
 %%====================================================================
 %% Exports
 %%====================================================================
 
--export( [code_change/3, handle_call/3, handle_cast/2, handle_info/2, init/1,
-          terminate/2, trigger/3] ).
+-export([code_change/3,
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         init/1,
+         terminate/2,
+         trigger/3]).
 
--export( [place_lst/0, trsn_lst/0, init_marking/2, preset/1, is_enabled/3,
-          fire/3] ).
+-export([place_lst/0,
+         trsn_lst/0,
+         init_marking/2,
+         preset/1,
+         is_enabled/3,
+         fire/3]).
 
--export( [start_link/0, start_link/1] ).
+-export([start_link/0, start_link/1]).
 
 %%====================================================================
 %% Includes
 %%====================================================================
 
--include_lib( "gen_pnet/include/gen_pnet.hrl" ).
-
+-include_lib("gen_pnet/include/gen_pnet.hrl").
 
 %%====================================================================
 %% API functions
@@ -30,70 +37,72 @@
 
 -spec start_link() -> gen_pnet:start_link_result().
 
-start_link() -> gen_pnet:start_link( ?MODULE, [], [] ).
+start_link() -> gen_pnet:start_link(?MODULE, [], []).
 
 
--spec start_link( ServerName ) -> gen_pnet:start_link_result()
-when ServerName :: gen_pnet:server_name().
+-spec start_link(ServerName) -> gen_pnet:start_link_result()
+              when ServerName :: gen_pnet:server_name().
 
-start_link( ServerName ) -> gen_pnet:start_link( ServerName, ?MODULE, [], [] ).
+start_link(ServerName) -> gen_pnet:start_link(ServerName, ?MODULE, [], []).
 
 
 %%====================================================================
 %% Interface callback functions
 %%====================================================================
 
--spec code_change( OldVsn :: _, NetState :: _, Extra :: _ ) ->
-        {ok, _} | {error, _}.
 
-code_change( _OldVsn, NetState, _Extra ) -> {ok, NetState}.
+-spec code_change(OldVsn :: _, NetState :: _, Extra :: _) ->
+          {ok, _} | {error, _}.
 
-
--spec handle_call( Request :: _, From :: {pid(), _}, NetState :: _ ) ->
-              {reply, _}
-            | {reply, _, #{ atom() => [_] }, #{ atom() => [_] }}
-            | noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _, _}.
-
-handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
+code_change(_OldVsn, NetState, _Extra) -> {ok, NetState}.
 
 
--spec handle_cast( Request :: _, NetState :: _ ) ->
-              noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _}.
+-spec handle_call(Request :: _, From :: {pid(), _}, NetState :: _) ->
+          {reply, _} |
+          {reply, _, #{atom() => [_]}, #{atom() => [_]}} |
+          noreply |
+          {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+          {stop, _, _}.
 
-handle_cast( _Request, _NetState ) -> noreply.
-
-
--spec handle_info( Info :: _, NetState :: _ ) ->
-              noreply
-            | {noreply, #{ atom() => [_] }, #{ atom() => [_] }}
-            | {stop, _}.
-
-handle_info( _Request, _NetState ) -> noreply.
+handle_call(_Request, _From, _NetState) -> {reply, {error, bad_msg}}.
 
 
--spec init( Args :: _ ) -> _.
+-spec handle_cast(Request :: _, NetState :: _) ->
+          noreply |
+          {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+          {stop, _}.
 
-init( _Args ) -> [].
-
-
--spec terminate( Reason :: _, NetState :: _ ) -> ok.
-
-terminate( _Reason, _NetState ) -> ok.
+handle_cast(_Request, _NetState) -> noreply.
 
 
--spec trigger( Place :: atom(), Token :: _, NetState :: _ ) ->
-            pass | drop.
+-spec handle_info(Info :: _, NetState :: _) ->
+          noreply |
+          {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+          {stop, _}.
 
-trigger( _Place, _Token, _NetState ) -> pass.
+handle_info(_Request, _NetState) -> noreply.
+
+
+-spec init(Args :: _) -> _.
+
+init(_Args) -> [].
+
+
+-spec terminate(Reason :: _, NetState :: _) -> ok.
+
+terminate(_Reason, _NetState) -> ok.
+
+
+-spec trigger(Place :: atom(), Token :: _, NetState :: _) ->
+          pass | drop.
+
+trigger(_Place, _Token, _NetState) -> pass.
 
 
 %%====================================================================
 %% Petri net callback functions
 %%====================================================================
+
 
 -spec place_lst() -> [atom()].
 
@@ -105,25 +114,23 @@ place_lst() -> [].
 trsn_lst() -> [].
 
 
--spec init_marking( Place :: atom(), UsrInfo :: _ ) -> [_].
+-spec init_marking(Place :: atom(), UsrInfo :: _) -> [_].
 
-init_marking( _Place, _UsrInfo ) -> [].
-
-
--spec preset( Trsn :: atom() ) -> [atom()].
-
-preset( _Trsn ) -> [].
+init_marking(_Place, _UsrInfo) -> [].
 
 
--spec is_enabled( Trsn :: atom(), Mode :: #{ atom() => [_]}, UsrInfo :: _ ) ->
-        boolean().
+-spec preset(Trsn :: atom()) -> [atom()].
 
-is_enabled( _Trsn, _Mode, _UsrInfo ) -> false.
-
-
--spec fire( Trsn :: atom(), Mode :: #{ atom() => [_] }, UsrInfo :: _ ) ->
-            abort | {produce, #{ atom() => [_] }}.
-
-fire( _Trsn, _Mode, _UsrInfo ) -> abort.
+preset(_Trsn) -> [].
 
 
+-spec is_enabled(Trsn :: atom(), Mode :: #{atom() => [_]}, UsrInfo :: _) ->
+          boolean().
+
+is_enabled(_Trsn, _Mode, _UsrInfo) -> false.
+
+
+-spec fire(Trsn :: atom(), Mode :: #{atom() => [_]}, UsrInfo :: _) ->
+          abort | {produce, #{atom() => [_]}}.
+
+fire(_Trsn, _Mode, _UsrInfo) -> abort.

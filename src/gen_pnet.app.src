@@ -4,14 +4,10 @@
   {registered, []},
   {applications,
    [kernel,
-    stdlib
-   ]},
-  {env,[]},
+    stdlib]},
+  {env, []},
   {modules, [gen_pnet, gen_pnet_iface, gen_pnet_net]},
 
   {maintainers, ["Jorgen Brandt"]},
   {licenses, ["Apache 2.0"]},
-  {links, [
-           {"GitHub", "https://github.com/joergen7/gen_pnet/"}
-          ]}
- ]}.
+  {links, [{"GitHub", "https://github.com/joergen7/gen_pnet/"}]}]}.
