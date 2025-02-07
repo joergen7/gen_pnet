@@ -436,7 +436,6 @@ start_link(ServerName, NetMod, InitArg, Options)
     gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options).
 
 
-
 %% @doc Query the list of tokens on the place named `Place' in the net instance
 %%      identified as `Name'.
 %%
