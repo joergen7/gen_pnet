@@ -423,7 +423,9 @@
 
 start_link(NetMod, NetArg, Options)
   when is_atom(NetMod), is_list(Options) ->
-    gen_server:start_link(?MODULE, {NetMod, NetArg}, Options).
+    Result = gen_server:start_link(?MODULE, {NetMod, NetArg}, Options),
+    continue(self()),
+    Result.
 
 
 %% @doc Starts a net instance registered as `ServerName' using the callback
@@ -446,7 +448,9 @@ start_link(NetMod, NetArg, Options)
 
 start_link(ServerName, NetMod, InitArg, Options)
   when is_tuple(ServerName), is_atom(NetMod), is_list(Options) ->
-    gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options).
+    Result = gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options),
+    continue(self),
+    Result.
 
 
 %% @doc Query the list of tokens on the place named `Place' in the net instance
