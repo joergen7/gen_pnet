@@ -449,7 +449,7 @@ start_link(NetMod, NetArg, Options)
 start_link(ServerName, NetMod, InitArg, Options)
   when is_tuple(ServerName), is_atom(NetMod), is_list(Options) ->
     Result = gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options),
-    continue(self),
+    continue(self()),
     Result.
 
 
