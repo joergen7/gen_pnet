@@ -2,7 +2,7 @@
 %%
 %% A generic Petri net OTP behavior.
 %%
-%% Copyright 2016-2017 Jörgen Brandt
+%% Copyright 2016 Jörgen Brandt
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 %% limitations under the License.
 %%
 %% -------------------------------------------------------------------
-%% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
+%% @author Jörgen Brandt <joergen@cuneiform-lang.org>
 %% @version 0.1.7
-%% @copyright 2016-2017 Jörgen Brandt
+%% @copyright 2016 Jörgen Brandt
 %%
 %% @doc Callback function definitions and API for the `gen_pnet' behavior.
 %%
@@ -175,35 +175,23 @@
 %% argument is a `#net_state{}' record instance describing the current state of
 %% the net. The `handle_call/3' function can generate a reply without changing
 %% the net marking by returning a `{reply, Reply}' tuple, it can generate a
-%% reply, consuming or producing tokens by returning a
-%% `{reply, Reply, ConsumeMap, ProduceMap}' tuple, it can defer replying without
-%% changing the net marking by returning `noreply', it can defer replying,
-%% consuming or producing tokens by returning a
-%% `{noreply, ConsumeMap, ProduceMap}' tuple, or it can stop the net instance by
-%% returning `{stop, Reason, Reply}'.
+%% reply, producing tokens by returning a `{reply, Reply, ProduceMap}' tuple, it
+%% can defer replying without changing the net marking by returning `noreply',
+%% it can defer replying, producing tokens by returning a
+%% `{noreply, ProduceMap}' tuple, or it can stop the net instance by returning
+%% `{stop, Reason, Reply}'.
 %%
 %% Example:
 %% ```
 %% handle_call( insert_coin, _From, _NetState ) ->
-%%   {reply, ok, #{}, #{ coin_slot => [coin] }};
-%%
-%% handle_call( remove_cookie_box, _From, NetState ) ->
-%%
-%%   case gen_pnet:get_ls( compartment, NetState ) of
-%%     []    -> {reply, {error, empty_compartment}};
-%%     [_|_] -> {reply, ok, #{ compartment => [cookie_box] }, #{}}
-%%   end;
+%%   {reply, ok, #{ coin_slot => [coin] }};
 %%
 %% handle_call( _Request, _From, _NetState ) -> {reply, {error, bad_msg}}.
 %% '''
 %% Here, we react to two kinds of messages: Inserting a coin in the coin slot
-%% and removing a cookie box from the compartment. Thus, we react to an
-%% `insert_coin' message by replying with `ok', consuming nothing and producing
-%% a `coin' token on the `coin_slot' place. When receiving a `remove_cookie_box'
-%% message, we check whether the `compartment' place is empty, replying with an
-%% error message if it is, otherwise replying with `ok', consuming one
-%% `cookie_box' token from the `compartment' place, and producing nothing. Calls
-%% that are neither `insert_coin' nor `remove_cookie_box' are responded to with
+%% and unrecognized messages. Thus, we react to an `insert_coin' message by
+%% replying with `ok', consuming nothing and producing a `coin' token on the
+%% `coin_slot' place. Calls that are not `insert_coin' are responded to with
 %% an error message.
 %%
 %% <h4>handle_cast/2</h4>
@@ -211,8 +199,8 @@
 %% The `handle_cast/2' function reacts to an asynchronous message received by
 %% the net instance. The first argument is the request while the second argument
 %% is a `#net_state{}' record instance. The `handle_cast/2' function can either
-%% leave the net unchanged by returning `noreply' or it can consume or produce
-%% tokens by returning a `{noreply, ConsumeMap, ProduceMap}' tuple.
+%% leave the net unchanged by returning `noreply' or it can produce tokens by
+%% returning a `{noreply, ProduceMap}' tuple.
 %%
 %% Example:
 %% ```
@@ -226,8 +214,7 @@
 %% received by the net instance. The first argument is the message term while
 %% the second argument is a `#net_state{}' record instance. The `handle_info/2'
 %% function can either leave the net unchanged by returning `noreply' or it can
-%% consume or produce tokens by returning a `{noreply, ConsumeMap, ProduceMap}'
-%% tuple.
+%% produce tokens by returning a `{noreply, ProduceMap}' tuple.
 %%
 %% Example:
 %% ```
@@ -379,6 +366,9 @@
 -callback fire(Trsn :: atom(), Mode :: #{atom() => [_]}, UsrInfo :: _) ->
               abort | {produce, #{atom() => [_]}}.
 
+-callback trigger(Place :: atom(), Token :: _, NetState :: #net_state{}) ->
+              pass | drop.
+
 %% Interface callbacks
 
 -callback code_change(OldVsn :: _, NetState :: #net_state{}, Extra :: _) ->
@@ -388,27 +378,24 @@
                       From :: {pid(), _},
                       NetState :: #net_state{}) ->
               {reply, _} |
-              {reply, _, #{atom() => [_]}, #{atom() => [_]}} |
+              {reply, _, #{atom() => [_]}} |
               noreply |
-              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {noreply, #{atom() => [_]}} |
               {stop, _, _}.
 
 -callback handle_cast(Request :: _, NetState :: #net_state{}) ->
               noreply |
-              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {noreply, #{atom() => [_]}} |
               {stop, _}.
 
 -callback handle_info(Info :: _, NetState :: #net_state{}) ->
               noreply |
-              {noreply, #{atom() => [_]}, #{atom() => [_]}} |
+              {noreply, #{atom() => [_]}} |
               {stop, _}.
 
 -callback init(NetArg :: _) -> _.
 
 -callback terminate(Reason :: _, NetState :: #net_state{}) -> ok.
-
--callback trigger(Place :: atom(), Token :: _, NetState :: #net_state{}) ->
-              pass | drop.
 
 %%====================================================================
 %% API functions
@@ -423,9 +410,7 @@
 
 start_link(NetMod, NetArg, Options)
   when is_atom(NetMod), is_list(Options) ->
-    Result = gen_server:start_link(?MODULE, {NetMod, NetArg}, Options),
-    continue(self()),
-    Result.
+    gen_server:start_link(?MODULE, {NetMod, NetArg}, Options).
 
 
 %% @doc Starts a net instance registered as `ServerName' using the callback
@@ -448,9 +433,8 @@ start_link(NetMod, NetArg, Options)
 
 start_link(ServerName, NetMod, InitArg, Options)
   when is_tuple(ServerName), is_atom(NetMod), is_list(Options) ->
-    Result = gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options),
-    continue(self()),
-    Result.
+    gen_server:start_link(ServerName, ?MODULE, {NetMod, InitArg}, Options).
+
 
 
 %% @doc Query the list of tokens on the place named `Place' in the net instance
@@ -565,7 +549,7 @@ cast(Name, Request) ->
 
 %% @doc Sends a reply to a calling client process.
 %%
-%%      This funciton is to be used when the reply to a caller has been
+%%      This function is to be used when the reply to a caller has been
 %%      deferred by returning `{noreply, _, _}' in `handle_call/3'.
 %%
 %% @see handle_call/3
@@ -674,20 +658,18 @@ handle_call({call, Request},
         {reply, Reply} ->
             {reply, Reply, NetState};
 
-        {reply, Reply, CnsMap, ProdMap} ->
-            NetState1 = cns(CnsMap, NetState),
-            NetState2 = handle_trigger(ProdMap, NetState1),
+        {reply, Reply, ProdMap} ->
+            NetState1 = handle_trigger(ProdMap, NetState),
             continue(self()),
-            {reply, Reply, NetState2};
+            {reply, Reply, NetState1};
 
         noreply ->
             {noreply, NetState};
 
-        {noreply, CnsMap, ProdMap} ->
-            NetState1 = cns(CnsMap, NetState),
-            NetState2 = handle_trigger(ProdMap, NetState1),
+        {noreply, ProdMap} ->
+            NetState1 = handle_trigger(ProdMap, NetState),
             continue(self()),
-            {noreply, NetState2};
+            {noreply, NetState1};
 
         {stop, Reason, Reply} ->
             {stop, Reason, Reply, NetState}
@@ -775,11 +757,10 @@ handle_cast({cast, Request}, NetState = #net_state{net_mod = NetMod}) ->
         noreply ->
             {noreply, NetState};
 
-        {noreply, CnsMap, ProdMap} ->
-            NetState1 = cns(CnsMap, NetState),
-            NetState2 = handle_trigger(ProdMap, NetState1),
+        {noreply, ProdMap} ->
+            NetState1 = handle_trigger(ProdMap, NetState),
             continue(self()),
-            {noreply, NetState2};
+            {noreply, NetState1};
 
         {stop, Reason} ->
             {stop, Reason, NetState}
@@ -799,11 +780,10 @@ handle_info(Info, NetState = #net_state{net_mod = NetMod}) ->
         noreply ->
             {noreply, NetState};
 
-        {noreply, CnsMap, ProdMap} ->
-            NetState1 = cns(CnsMap, NetState),
-            NetState2 = handle_trigger(ProdMap, NetState1),
+        {noreply, ProdMap} ->
+            NetState1 = handle_trigger(ProdMap, NetState),
             continue(self()),
-            {noreply, NetState2};
+            {noreply, NetState1};
 
         {stop, Reason} ->
             {stop, Reason, NetState}
